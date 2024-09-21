@@ -1,5 +1,8 @@
 package com.devskill.devskill_api;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -15,16 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 @RestController
@@ -78,12 +80,27 @@ public class HelloController {
     }
 
     @GetMapping("/archivegh")
-    public JsonNode  archive(@RequestParam String path){
+    public JsonNode  archive(@RequestParam String path) throws IOException {
+
+      ArrayNode jsonArray = gettingJSON(path);
+
+      return jsonArray;
+    }
+
+    private static final String FILE_PATH = "C:/Users/Panos/Downloads/2015-01-01-15 (1).json/2015-01-01-15 (1).json";
+
+    private String constructUrl(String path){
+
         // Define the base URL within the method
         String baseUrl = "https://data.gharchive.org/";
 
         // Construct the full URL by combining base URL, path, and ".json.gz"
-        String fullUrl = STR."\{baseUrl}\{path}.json.gz";
+        return STR."\{baseUrl}\{path}.json.gz";
+    }
+
+    private ArrayNode gettingJSON(String path) throws IOException {
+
+        String fullUrl = constructUrl(path);
 
         // Initialize ObjectMapper for JSON parsing
         ObjectMapper objectMapper = new ObjectMapper();
@@ -101,14 +118,46 @@ public class HelloController {
                 JsonNode jsonNode = objectMapper.readTree(line);
                 jsonArray.add(jsonNode);
             }
-
-            // Return the accumulated array of JSON objects
-            return jsonArray;
-
         } catch (IOException e) {
-            e.printStackTrace();
-            return null; // Handle error properly in production
+            throw new RuntimeException(e);
         }
+
+        // Return the accumulated array of JSON objects
+            return jsonArray;
+    }
+
+    @GetMapping("/countEventTypesInAMonth")
+    public ResponseEntity<?> countEventTypesInAMonth(@RequestParam String date) {
+
+
+        Map<String, Integer> eventCounts;
+
+        try {
+            ArrayNode jsonArray = gettingJSON(date);
+            eventCounts = countEventTypes(jsonArray);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(STR."Error reading or processing the file: \{e.getMessage()}");
+        }
+
+        // Return 200 OK with the map of event counts as the response body
+        return ResponseEntity.ok(eventCounts);
+    }
+
+    private Map<String, Integer> countEventTypes(ArrayNode jsonNodes) {
+        Map<String, Integer> eventCounts = new HashMap<>();
+
+        // Iterate over each node in the ArrayNode
+        for (JsonNode node : jsonNodes) {
+            if (node.has("type")) {
+                String eventType = node.get("type").asText();
+
+                // Update the count for this event type
+                eventCounts.merge(eventType, 1, Integer::sum);
+            }
+        }
+
+        return eventCounts;
     }
 
 }
