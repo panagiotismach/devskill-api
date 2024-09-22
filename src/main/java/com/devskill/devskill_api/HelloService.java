@@ -11,10 +11,7 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 @Service
@@ -82,6 +79,44 @@ public class HelloService {
             }
         }
         return userCounts;
+    }
+
+    public Map<String, List<Map<String, Integer>>> countPullRequestAndPushEvents(ArrayNode jsonNodes) {
+        Map<String, List<Map<String, Integer>>> userEventCounts = new HashMap<>();
+
+        // Iterate through each event in the JSON array
+        for (JsonNode node : jsonNodes) {
+            // Check if the event has both the "type" and "actor" fields
+            if (node.has("type") && node.has("actor") && node.get("actor").has("login")) {
+                String eventType = node.get("type").asText();
+                String username = node.get("actor").get("login").asText();
+
+                // Check if the event is either PullRequestEvent or PushEvent
+                if ("PullRequestEvent".equals(eventType) || "PushEvent".equals(eventType)) {
+                    // Create a list for the user if it doesn't exist
+                    userEventCounts.putIfAbsent(username, new ArrayList<>());
+
+                    // Find if this event type already exists in the list for this user
+                    List<Map<String, Integer>> eventList = userEventCounts.get(username);
+                    Optional<Map<String, Integer>> existingEventMapOpt = eventList.stream()
+                            .filter(eventMap -> eventMap.containsKey(eventType))
+                            .findFirst();
+
+                    if (existingEventMapOpt.isPresent()) {
+                        // Increment the count for the existing event type
+                        Map<String, Integer> eventMap = existingEventMapOpt.get();
+                        eventMap.put(eventType, eventMap.get(eventType) + 1);
+                    } else {
+                        // Add a new map for this event type with a count of 1
+                        Map<String, Integer> newEventMap = new HashMap<>();
+                        newEventMap.put(eventType, 1);
+                        eventList.add(newEventMap);
+                    }
+                }
+            }
+        }
+
+        return userEventCounts;
     }
 
     public Map<String, Object> getUsersWithMaxEvents(ArrayNode jsonNodes) {

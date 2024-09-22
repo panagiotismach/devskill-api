@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -75,6 +76,17 @@ public class HelloController {
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error reading or processing the file: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/pullRequestAndPushEventsInAMonth")
+    public ResponseEntity<?> pullRequestAndPushEventsInAMonth(@RequestParam String date) {
+        try {
+            ArrayNode jsonArray = helloService.getArchiveData(date);
+            Map<String, List<Map<String, Integer>>> userEventCounts = helloService.countPullRequestAndPushEvents(jsonArray);
+            return ResponseEntity.ok(userEventCounts);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Error processing event counts: " + e.getMessage());
         }
     }
 
