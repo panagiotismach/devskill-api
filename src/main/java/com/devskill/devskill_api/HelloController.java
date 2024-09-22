@@ -144,6 +144,42 @@ public class HelloController {
         return ResponseEntity.ok(eventCounts);
     }
 
+    @GetMapping("/usersInAMonth")
+    public ResponseEntity<?> usersInAMonth(@RequestParam String date) {
+
+
+        Map<String, Integer> usersInAMonth;
+
+        try {
+            ArrayNode jsonArray = gettingJSON(date);
+            usersInAMonth = countUsersInAMonth(jsonArray);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(STR."Error reading or processing the file: \{e.getMessage()}");
+        }
+
+        // Return 200 OK with the map of event counts as the response body
+        return ResponseEntity.ok(usersInAMonth);
+    }
+
+    private Map<String, Integer> countUsersInAMonth(ArrayNode jsonNodes) {
+        Map<String, Integer> userCounts = new HashMap<>();
+
+        // Iterate over each node in the ArrayNode
+        for (JsonNode node : jsonNodes) {
+            if ( node.has("actor") ) {
+                JsonNode actor = node.get("actor");
+                if(actor.has("login")){
+                    String username = actor.get("login").asText();
+                    // Update the count for this event type
+                    userCounts.merge(username, 1, Integer::sum);
+                }
+            }
+        }
+
+        return userCounts;
+    }
+
     private Map<String, Integer> countEventTypes(ArrayNode jsonNodes) {
         Map<String, Integer> eventCounts = new HashMap<>();
 
