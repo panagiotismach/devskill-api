@@ -1,4 +1,4 @@
-package com.devskill.devskill_api;
+package com.devskill.devskill_api.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
