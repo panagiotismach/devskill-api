@@ -1,7 +1,14 @@
-package com.devskill.devskill_api;
+package com.devskill.devskill_api.controllers;
 
+
+
+import com.devskill.devskill_api.services.HelloService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,8 +38,16 @@ public class HelloController {
      * @param url The GitHub repository URL.
      * @return ResponseEntity with a message indicating the result of the operation.
      */
-    @GetMapping("/mine-skills")
-    public ResponseEntity<String> mineSkills(@RequestParam String url) {
+    @Operation(summary = "Download GitHub repository src", description = "Download and save the source of a GitHub repository based on its URL.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully downloaded the repository"),
+            @ApiResponse(responseCode = "400", description = "Invalid GitHub URL format"),
+            @ApiResponse(responseCode = "500", description = "Failed to download or save ZIP file")
+    })
+    @GetMapping("/getRepositorySrc")
+    public ResponseEntity<String> getRepositorySrc(
+            @Parameter(description = "GitHub repository URL", required = true)
+            @RequestParam String url) {
 
         String[] parts = url.split("/");
         if (parts.length < 5 || !"github.com".equals(parts[2])) {
@@ -61,8 +76,15 @@ public class HelloController {
      * @param path The path of the archive file.
      * @return JSON array representing the archive data.
      */
+    @Operation(summary = "Get GitHub archive data", description = "Retrieve GitHub archive data from the provided file path.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved archive data"),
+            @ApiResponse(responseCode = "500", description = "Error reading or processing the archive file")
+    })
     @GetMapping("/getDataFromGhArchive")
-    public ResponseEntity<JsonNode> getDataFromGhArchive(@RequestParam String path) {
+    public ResponseEntity<JsonNode> getDataFromGhArchive(
+            @Parameter(description = "Path to the archive file", required = true)
+            @RequestParam String path) {
         try {
             // Call the service to get the archive data as a JSON array
             ArrayNode jsonArray = helloService.getArchiveData(path);
@@ -80,8 +102,15 @@ public class HelloController {
      * @param date The date string representing the month.
      * @return Map with event types as keys and their counts as values.
      */
+    @Operation(summary = "Count event types in a month", description = "Count the types of GitHub events that occurred during the given month.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully counted event types"),
+            @ApiResponse(responseCode = "500", description = "Error processing the event data")
+    })
     @GetMapping("/countEventTypesInAMonth")
-    public ResponseEntity<?> countEventTypesInAMonth(@RequestParam String date) {
+    public ResponseEntity<?> countEventTypesInAMonth(
+            @Parameter(description = "Date of the month to count users", required = true)
+            @RequestParam String date) {
         try {
             // Retrieve archive data for the given date
             ArrayNode jsonArray = helloService.getArchiveData(date);
@@ -101,8 +130,15 @@ public class HelloController {
      * @param date The date string representing the month.
      * @return Map with usernames as keys and the number of events they participated in as values.
      */
+    @Operation(summary = "Count GitHub users in a month", description = "Count the number of users participating in events during a given month.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully counted users"),
+            @ApiResponse(responseCode = "500", description = "Error processing the user data")
+    })
     @GetMapping("/usersInAMonth")
-    public ResponseEntity<?> usersInAMonth(@RequestParam String date) {
+    public ResponseEntity<?> usersInAMonth(
+            @Parameter(description = "Date of the month to count users", required = true)
+            @RequestParam String date) {
         try {
             // Retrieve archive data for the given date
             ArrayNode jsonArray = helloService.getArchiveData(date);
@@ -122,8 +158,15 @@ public class HelloController {
      * @param date The date string representing the month.
      * @return Map of users and their pull request/push event counts.
      */
+    @Operation(summary = "Count pull request and push events", description = "Count the pull request and push events for users in a given month.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully counted pull request and push events"),
+            @ApiResponse(responseCode = "500", description = "Error processing the event data")
+    })
     @GetMapping("/pullRequestAndPushEventsInAMonth")
-    public ResponseEntity<?> pullRequestAndPushEventsInAMonth(@RequestParam String date) {
+    public ResponseEntity<?> pullRequestAndPushEventsInAMonth(
+            @Parameter(description = "Date of the month to find the maximum user activity", required = true)
+            @RequestParam String date) {
         try {
             // Retrieve archive data for the given date
             ArrayNode jsonArray = helloService.getArchiveData(date);
@@ -142,8 +185,15 @@ public class HelloController {
      * @param date The date string representing the month.
      * @return Map containing the user(s) with the maximum events and the count.
      */
+    @Operation(summary = "Find user with maximum events", description = "Find the user(s) with the maximum number of events in a given month.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully found user with maximum events"),
+            @ApiResponse(responseCode = "500", description = "Error processing the event data")
+    })
     @GetMapping("/maxUsersInAMonth")
-    public ResponseEntity<?> maxUsersInAMonth(@RequestParam String date) {
+    public ResponseEntity<?> maxUsersInAMonth(
+            @Parameter(description = "Date of the month to find the maximum user activity", required = true)
+            @RequestParam String date) {
         try {
             // Retrieve archive data for the given date
             ArrayNode jsonArray = helloService.getArchiveData(date);
