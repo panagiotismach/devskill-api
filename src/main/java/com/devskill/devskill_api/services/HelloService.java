@@ -18,76 +18,135 @@ import java.util.zip.GZIPInputStream;
 @Service
 public class HelloService {
 
+    // RestTemplate for making HTTP requests
     private final RestTemplate restTemplate;
+
+    // ObjectMapper for parsing JSON data
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Constructor for HelloService.
+     * @param restTemplate The RestTemplate instance used for making HTTP requests.
+     */
     public HelloService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
+    /**
+     * Downloads a ZIP file of a GitHub repository.
+     * It constructs the download URL using the organization and repository names and saves the ZIP file locally.
+     *
+     * @param organization The name of the GitHub organization.
+     * @param repository The name of the GitHub repository.
+     * @return A success message indicating the download status.
+     * @throws IOException if the download fails or the file cannot be written.
+     */
     public String downloadRepositoryZip(String organization, String repository) throws IOException {
-        String downloadUrl = STR."https://codeload.github.com/\{organization}/\{repository}/zip/refs/heads/master";
+        // Construct the download URL for the repository's ZIP file
+        String downloadUrl = String.format("https://codeload.github.com/%s/%s/zip/refs/heads/master", organization, repository);
         Path filePath = FileSystems.getDefault().getPath("downloaded.zip");
 
+        // Fetch the ZIP file bytes from the constructed URL
         byte[] zipFileBytes = restTemplate.getForObject(downloadUrl, byte[].class);
 
+        // Check if the download was successful
         if (zipFileBytes == null || zipFileBytes.length == 0) {
             throw new IOException("Failed to download ZIP file");
         }
 
+        // Write the downloaded ZIP bytes to a file
         try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
             fos.write(zipFileBytes);
         }
 
-        return STR."Successfully downloaded and saved ZIP file for \{organization}/\{repository}";
+        // Return success message
+        return String.format("Successfully downloaded and saved ZIP file for %s/%s", organization, repository);
     }
 
+    /**
+     * Retrieves and decompresses the archive data from a specified path.
+     * It reads the GZIP-compressed JSON data and converts each line to a JsonNode, storing them in an ArrayNode.
+     *
+     * @param path The path to the archive data.
+     * @return An ArrayNode containing the parsed JSON data.
+     * @throws IOException if the data cannot be retrieved or parsed.
+     */
     public ArrayNode getArchiveData(String path) throws IOException {
+        // Construct the full URL for the GZIP JSON data
         String fullUrl = constructUrl(path);
         ArrayNode jsonArray = objectMapper.createArrayNode();
 
+        // Read and decompress the GZIP input stream from the URL
         try (GZIPInputStream gzipInputStream = new GZIPInputStream(new URL(fullUrl).openStream());
              BufferedReader reader = new BufferedReader(new InputStreamReader(gzipInputStream))) {
             String line;
+            // Parse each line of JSON data and add it to the array node
             while ((line = reader.readLine()) != null) {
                 JsonNode jsonNode = objectMapper.readTree(line);
                 jsonArray.add(jsonNode);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); // Handle exceptions
         }
 
-        return jsonArray;
+        return jsonArray; // Return the populated JSON array
     }
 
+    /**
+     * Counts the number of occurrences of each event type in the archive data.
+     * It iterates through the JSON nodes and aggregates the counts of event types into a map.
+     *
+     * @param jsonNodes The ArrayNode containing the JSON data.
+     * @return A map where the keys are event types and the values are their respective counts.
+     */
     public Map<String, Integer> countEventTypesInArchive(ArrayNode jsonNodes) {
         Map<String, Integer> eventCounts = new HashMap<>();
+        // Iterate through each JSON node in the array
         for (JsonNode node : jsonNodes) {
+            // Check if the node has a "type" field
             if (node.has("type")) {
                 String eventType = node.get("type").asText();
+                // Merge the event count for this type
                 eventCounts.merge(eventType, 1, Integer::sum);
             }
         }
-        return eventCounts;
+        return eventCounts; // Return the map of event type counts
     }
 
+    /**
+     * Counts the number of unique users present in the archive data.
+     * It extracts the usernames from the actor field in the JSON nodes and aggregates the counts.
+     *
+     * @param jsonNodes The ArrayNode containing the JSON data.
+     * @return A map where the keys are usernames and the values are their respective counts.
+     */
     public Map<String, Integer> countUsersInArchive(ArrayNode jsonNodes) {
         Map<String, Integer> userCounts = new HashMap<>();
+        // Iterate through each JSON node in the array
         for (JsonNode node : jsonNodes) {
+            // Check if the node has an "actor" with a "login" field
             if (node.has("actor") && node.get("actor").has("login")) {
                 String username = node.get("actor").get("login").asText();
+                // Merge the user count
                 userCounts.merge(username, 1, Integer::sum);
             }
         }
-        return userCounts;
+        return userCounts; // Return the map of user counts
     }
 
+    /**
+     * Counts the number of PullRequest and Push events for each user in the archive data.
+     * It organizes the counts into a map where each key is a username and each value is a list of event type counts.
+     *
+     * @param jsonNodes The ArrayNode containing the JSON data.
+     * @return A map where the keys are usernames and the values are lists of maps containing event type counts.
+     */
     public Map<String, List<Map<String, Integer>>> countPullRequestAndPushEvents(ArrayNode jsonNodes) {
         Map<String, List<Map<String, Integer>>> userEventCounts = new HashMap<>();
 
         // Iterate through each event in the JSON array
         for (JsonNode node : jsonNodes) {
-            // Check if the event has both the "type" and "actor" fields
+            // Check if the event has both "type" and "actor" fields
             if (node.has("type") && node.has("actor") && node.get("actor").has("login")) {
                 String eventType = node.get("type").asText();
                 String username = node.get("actor").get("login").asText();
@@ -117,9 +176,16 @@ public class HelloService {
             }
         }
 
-        return userEventCounts;
+        return userEventCounts; // Return the map of user event counts
     }
 
+    /**
+     * Identifies users with the maximum number of events in the archive data.
+     * It returns a map containing the usernames with the highest event counts and the maximum count.
+     *
+     * @param jsonNodes The ArrayNode containing the JSON data.
+     * @return A map containing the list of users with the maximum event counts and the max count value.
+     */
     public Map<String, Object> getUsersWithMaxEvents(ArrayNode jsonNodes) {
         Map<String, Integer> userCounts = countUsersInArchive(jsonNodes);
 
@@ -139,10 +205,16 @@ public class HelloService {
         result.put("maxUsers", maxUsers);
         result.put("maxValue", maxCount);
 
-        return result;
+        return result; // Return the map containing users with max events
     }
 
+    /**
+     * Constructs the URL for accessing GZIP JSON data from the archive.
+     *
+     * @param path The path to append to the base URL for the archive data.
+     * @return The full URL to access the GZIP JSON data.
+     */
     private String constructUrl(String path) {
-        return STR."https://data.gharchive.org/\{path}.json.gz";
+        return String.format("https://data.gharchive.org/%s.json.gz", path);
     }
 }
