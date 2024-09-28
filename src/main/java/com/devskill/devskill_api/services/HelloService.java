@@ -7,11 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
@@ -216,5 +218,28 @@ public class HelloService {
      */
     private String constructUrl(String path) {
         return String.format("https://data.gharchive.org/%s.json.gz", path);
+    }
+
+    private static final String DOWNLOAD_DIRECTORY = "downloads/";
+
+    public String getArchiveSH(String path) throws IOException {
+       // Define the download directory
+        Path filePath = FileSystems.getDefault().getPath("downloaded.zip");
+
+        // Fetch the ZIP file bytes from the constructed URL
+        byte[] zipFileBytes = restTemplate.getForObject(path, byte[].class);
+
+        // Check if the download was successful
+        if (zipFileBytes == null || zipFileBytes.length == 0) {
+            throw new IOException("Failed to download ZIP file");
+        }
+
+        // Write the downloaded ZIP bytes to a file
+        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+            fos.write(zipFileBytes);
+        }
+
+        // Return success message
+        return String.format("Successfully downloaded and saved ZIP file");
     }
 }

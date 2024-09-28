@@ -16,9 +16,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 @RestController
 public class HelloController {
@@ -205,4 +209,19 @@ public class HelloController {
             return ResponseEntity.internalServerError().body(STR."Error processing max users: \{e.getMessage()}");
         }
     }
+
+    @GetMapping("/getArchiveSH")
+    public ResponseEntity<?> getArchiveSH(
+            @Parameter(description = "Path to the archive", required = true)
+            @RequestParam String path) {
+        try {
+            // Retrieve archive data for the given date
+            String message = helloService.getArchiveSH(path);
+            return ResponseEntity.ok(message);
+        } catch (IOException e) {
+            // Return 500 Internal Server Error if there's an issue with processing the data
+            return ResponseEntity.internalServerError().body(STR."Error processing max users: \{e.getMessage()}");
+        }
+    }
+
 }
