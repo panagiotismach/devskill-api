@@ -1,5 +1,7 @@
 package com.devskill.devskill_api.services;
 
+import com.devskill.devskill_api.config.AppConfig;
+import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -75,7 +77,9 @@ public class HelloService {
      */
     public ArrayNode getArchiveData(String path) throws IOException {
         // Construct the full URL for the GZIP JSON data
-        String fullUrl = constructUrl(path);
+
+        System.out.println("o");
+        String fullUrl = Utils.constructUrl("archivegh" ,path);
         ArrayNode jsonArray = objectMapper.createArrayNode();
 
         // Read and decompress the GZIP input stream from the URL
