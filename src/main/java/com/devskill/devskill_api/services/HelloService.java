@@ -78,12 +78,12 @@ public class HelloService {
     public ArrayNode getArchiveData(String path) throws IOException {
         // Construct the full URL for the GZIP JSON data
 
-        System.out.println("o");
-        String fullUrl = Utils.constructUrl("archivegh" ,path);
+        String url = Utils.constructUrl("archivegh", path);
+
         ArrayNode jsonArray = objectMapper.createArrayNode();
 
         // Read and decompress the GZIP input stream from the URL
-        try (GZIPInputStream gzipInputStream = new GZIPInputStream(new URL(fullUrl).openStream());
+        try (GZIPInputStream gzipInputStream = new GZIPInputStream(new URL(url).openStream());
              BufferedReader reader = new BufferedReader(new InputStreamReader(gzipInputStream))) {
             String line;
             // Parse each line of JSON data and add it to the array node
@@ -226,12 +226,15 @@ public class HelloService {
 
     private static final String DOWNLOAD_DIRECTORY = "downloads/";
 
-    public String getArchiveSH(String path) throws IOException {
+    public String getArchiveSH(String repoUrl) throws IOException {
+
+        String url = Utils.constructUrl("softwareheritage", repoUrl);
+
        // Define the download directory
         Path filePath = FileSystems.getDefault().getPath("downloaded.zip");
 
         // Fetch the ZIP file bytes from the constructed URL
-        byte[] zipFileBytes = restTemplate.getForObject(path, byte[].class);
+        byte[] zipFileBytes = restTemplate.getForObject(url, byte[].class);
 
         // Check if the download was successful
         if (zipFileBytes == null || zipFileBytes.length == 0) {
