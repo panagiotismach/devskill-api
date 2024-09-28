@@ -1,4 +1,4 @@
-package com.devskill.devskill_api;
+package com.devskill.devskill_api.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
