@@ -22,8 +22,6 @@ import java.util.zip.GZIPInputStream;
 @Service
 public class HelloService {
 
-    // RestTemplate for making HTTP requests
-    private final RestTemplate restTemplate;
 
     // ObjectMapper for parsing JSON data
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -31,12 +29,9 @@ public class HelloService {
     @Autowired
     private Utils utils;
 
-    /**
-     * Constructor for HelloService.
-     * @param restTemplate The RestTemplate instance used for making HTTP requests.
-     */
-    public HelloService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+
+    public HelloService() {
+
     }
 
     /**
@@ -48,26 +43,11 @@ public class HelloService {
      * @return A success message indicating the download status.
      * @throws IOException if the download fails or the file cannot be written.
      */
-    public String downloadRepositoryZip(String organization, String repository) throws IOException {
+    public String downloadRepositoryFromWayBack(String organization, String repository) throws IOException {
         // Construct the download URL for the repository's ZIP file
-        String downloadUrl = String.format("https://codeload.github.com/%s/%s/zip/refs/heads/master", organization, repository);
-        Path filePath = FileSystems.getDefault().getPath("downloaded.zip");
+        String url = utils.constructUrl("wayback", organization, repository);
 
-        // Fetch the ZIP file bytes from the constructed URL
-        byte[] zipFileBytes = restTemplate.getForObject(downloadUrl, byte[].class);
-
-        // Check if the download was successful
-        if (zipFileBytes == null || zipFileBytes.length == 0) {
-            throw new IOException("Failed to download ZIP file");
-        }
-
-        // Write the downloaded ZIP bytes to a file
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            fos.write(zipFileBytes);
-        }
-
-        // Return success message
-        return String.format("Successfully downloaded and saved ZIP file for %s/%s", organization, repository);
+        return utils.downloadRepo(url);
     }
 
     /**

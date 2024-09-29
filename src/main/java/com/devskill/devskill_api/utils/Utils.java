@@ -21,6 +21,7 @@ public class Utils {
     // URL patterns as final strings
     private static final String URL_ARCHIVE = "https://data.gharchive.org/";
     private static final String URL_SOFTWARE_HERITAGE = "https://archive.softwareheritage.org";
+    private static final String URL_WAYBACK = "https://codeload.github.com/";
 
     private final RestTemplate restTemplate;
 
@@ -44,6 +45,16 @@ public class Utils {
                 STR."\{URL_SOFTWARE_HERITAGE}/api/1/vault/flat/%s" :
                 STR."\{URL_ARCHIVE}%s.json.gz";
         return String.format(urlPattern, path);
+    }
+
+    public String constructUrl(String type, String organization, String repository) {
+
+        String urlPattern = "";
+        if(!type.equals("wayback")){
+            return  urlPattern;
+        }
+        urlPattern =  STR."\{URL_WAYBACK}/%s/%s/zip/refs/heads/master";
+        return String.format(urlPattern, organization, repository);
     }
 
     /**

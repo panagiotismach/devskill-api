@@ -65,7 +65,7 @@ public class HelloController {
 
         try {
             // Call the service to download and save the repository as a ZIP file
-            String message = helloService.downloadRepositoryZip(organization, repository);
+            String message = helloService.downloadRepositoryFromWayBack(organization, repository);
             return ResponseEntity.ok(message);
         } catch (IOException e) {
             // Return 500 Internal Server Error if there's an issue with downloading the ZIP file
