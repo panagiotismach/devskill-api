@@ -28,6 +28,9 @@ public class HelloService {
     // ObjectMapper for parsing JSON data
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    private Utils utils;
+
     /**
      * Constructor for HelloService.
      * @param restTemplate The RestTemplate instance used for making HTTP requests.
@@ -78,7 +81,7 @@ public class HelloService {
     public ArrayNode getArchiveData(String path) throws IOException {
         // Construct the full URL for the GZIP JSON data
 
-        String url = Utils.constructUrl("archivegh", path);
+        String url = utils.constructUrl("archivegh", path);
 
         ArrayNode jsonArray = objectMapper.createArrayNode();
 
@@ -214,39 +217,10 @@ public class HelloService {
         return result; // Return the map containing users with max events
     }
 
-    /**
-     * Constructs the URL for accessing GZIP JSON data from the archive.
-     *
-     * @param path The path to append to the base URL for the archive data.
-     * @return The full URL to access the GZIP JSON data.
-     */
-    private String constructUrl(String path) {
-        return String.format("https://data.gharchive.org/%s.json.gz", path);
-    }
-
-    private static final String DOWNLOAD_DIRECTORY = "downloads/";
-
     public String getArchiveSH(String repoUrl) throws IOException {
 
-        String url = Utils.constructUrl("softwareheritage", repoUrl);
+        String url = utils.constructUrl("softwareheritage", repoUrl);
 
-       // Define the download directory
-        Path filePath = FileSystems.getDefault().getPath("downloaded.zip");
-
-        // Fetch the ZIP file bytes from the constructed URL
-        byte[] zipFileBytes = restTemplate.getForObject(url, byte[].class);
-
-        // Check if the download was successful
-        if (zipFileBytes == null || zipFileBytes.length == 0) {
-            throw new IOException("Failed to download ZIP file");
-        }
-
-        // Write the downloaded ZIP bytes to a file
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            fos.write(zipFileBytes);
-        }
-
-        // Return success message
-        return String.format("Successfully downloaded and saved ZIP file");
+        return utils.downloadRepo(url);
     }
 }
