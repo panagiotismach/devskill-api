@@ -28,23 +28,8 @@ public class SoftwareHeritageService {
 
     }
 
-    /**
-     * Downloads a ZIP file of a GitHub repository.
-     * It constructs the download URL using the organization and repository names and saves the ZIP file locally.
-     *
-     * @param organization The name of the GitHub organization.
-     * @param repository The name of the GitHub repository.
-     * @return A success message indicating the download status.
-     * @throws IOException if the download fails or the file cannot be written.
-     */
-    public String downloadRepositoryFromWayBack(String organization, String repository) throws IOException {
-        // Construct the download URL for the repository's ZIP file
-        String url = utils.constructUrl("wayback", organization, repository);
 
-        return utils.downloadRepo(url);
-    }
-
-    public String getArchiveSH(String repoUrl) throws IOException {
+    public String findArchiveSH(String repoUrl) throws IOException {
 
         String url = utils.constructUrl("softwareheritage", repoUrl);
 

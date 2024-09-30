@@ -76,7 +76,7 @@ public class GitHubArchiveController {
             @ApiResponse(responseCode = "500", description = "Error processing the user data")
     })
     @GetMapping("/usersInAMonth")
-    public ResponseEntity<?> usersInAMonth(
+    public ResponseEntity<?> findUsersInAMonth(
             @Parameter(description = "Date of the month to count users", required = true)
             @RequestParam String date) {
         try {
@@ -119,14 +119,14 @@ public class GitHubArchiveController {
             @ApiResponse(responseCode = "500", description = "Error processing the event data")
     })
     @GetMapping("/maxUsersInAMonth")
-    public ResponseEntity<?> maxUsersInAMonth(
+    public ResponseEntity<?> findMaxUsersInAMonth(
             @Parameter(description = "Date of the month to find the maximum user activity", required = true)
             @RequestParam String date) {
         try {
             // Retrieve archive data for the given date
             ArrayNode jsonArray = gitHubArchiveService.getArchiveData(date);
             // Find the user(s) with the maximum number of events
-            Map<String, Object> maxUsersAndValue = gitHubArchiveService.getUsersWithMaxEvents(jsonArray);
+            Map<String, Object> maxUsersAndValue = gitHubArchiveService.findUsersWithMaxEvents(jsonArray);
             return ResponseEntity.ok(maxUsersAndValue);
         } catch (IOException e) {
             // Return 500 Internal Server Error if there's an issue with processing the data

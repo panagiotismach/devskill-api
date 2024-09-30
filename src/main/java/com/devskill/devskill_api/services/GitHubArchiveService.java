@@ -154,7 +154,7 @@ public class GitHubArchiveService {
      * @param jsonNodes The ArrayNode containing the JSON data.
      * @return A map containing the list of users with the maximum event counts and the max count value.
      */
-    public Map<String, Object> getUsersWithMaxEvents(ArrayNode jsonNodes) {
+    public Map<String, Object> findUsersWithMaxEvents(ArrayNode jsonNodes) {
         Map<String, Integer> userCounts = countUsersInArchive(jsonNodes);
 
         // Find the maximum event count

@@ -32,12 +32,12 @@ public class SoftwareHeritageController {
             @ApiResponse(responseCode = "500", description = "Internal server error while processing the request")
     })
     @GetMapping("/getArchiveSH")
-    public ResponseEntity<?> getArchiveSH(
+    public ResponseEntity<?> findArchiveSH(
             @Parameter(description = "Path to the archive in Software Heritage", required = true)
             @RequestParam String path) {
         try {
             // Call the service to retrieve the archive data
-            String message = softwareHeritageService.getArchiveSH(path);
+            String message = softwareHeritageService.findArchiveSH(path);
             return ResponseEntity.ok(message);
         } catch (IOException e) {
             // Handle any exceptions that occur during processing
