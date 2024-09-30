@@ -1,26 +1,20 @@
 package com.devskill.devskill_api.services;
 
-import com.devskill.devskill_api.config.AppConfig;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import javax.swing.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
-
 @Service
-public class HelloService {
+public class GitHubArchiveService {
 
 
     // ObjectMapper for parsing JSON data
@@ -30,25 +24,10 @@ public class HelloService {
     private Utils utils;
 
 
-    public HelloService() {
+    public GitHubArchiveService() {
 
     }
 
-    /**
-     * Downloads a ZIP file of a GitHub repository.
-     * It constructs the download URL using the organization and repository names and saves the ZIP file locally.
-     *
-     * @param organization The name of the GitHub organization.
-     * @param repository The name of the GitHub repository.
-     * @return A success message indicating the download status.
-     * @throws IOException if the download fails or the file cannot be written.
-     */
-    public String downloadRepositoryFromWayBack(String organization, String repository) throws IOException {
-        // Construct the download URL for the repository's ZIP file
-        String url = utils.constructUrl("wayback", organization, repository);
-
-        return utils.downloadRepo(url);
-    }
 
     /**
      * Retrieves and decompresses the archive data from a specified path.
@@ -197,10 +176,5 @@ public class HelloService {
         return result; // Return the map containing users with max events
     }
 
-    public String getArchiveSH(String repoUrl) throws IOException {
-
-        String url = utils.constructUrl("softwareheritage", repoUrl);
-
-        return utils.downloadRepo(url);
-    }
 }
+
