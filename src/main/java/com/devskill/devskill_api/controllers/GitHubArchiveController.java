@@ -1,6 +1,9 @@
 package com.devskill.devskill_api.controllers;
 
+import com.devskill.devskill_api.models.Contributor;
+import com.devskill.devskill_api.services.ContributorsService;
 import com.devskill.devskill_api.services.GitHubArchiveService;
+import com.devskill.devskill_api.services.RepoService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,19 +16,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.io.*;
+import java.util.*;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 public class GitHubArchiveController {
 
     private final GitHubArchiveService gitHubArchiveService;
+    private final ContributorsService contributorService;
+    private final RepoService repoService;
 
     @Autowired
-    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService) {
+    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService) {
         this.gitHubArchiveService = gitHubArchiveService;
+        this.contributorService = contributorService;
+        this.repoService = repoService;
     }
 
     @Operation(summary = "Get GitHub archive data", description = "Retrieve GitHub archive data from the provided file path.")
@@ -133,4 +139,41 @@ public class GitHubArchiveController {
             return ResponseEntity.internalServerError().body(STR."Error processing max users: \{e.getMessage()}");
         }
     }
+
+    @GetMapping("/getRepositories")
+    public ResponseEntity<?> getRepositories(@RequestParam String name) {
+        try {
+            Map<String, Object> response = repoService.getRepositories(name);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/process-files")
+    public ResponseEntity<?> processFiles() {
+        try {
+            Map<String, Object> response = repoService.processFiles();
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/findUniqueExtensions")
+    public ResponseEntity<Map<String, Integer>> findUniqueExtensions() {
+        Map<String, Integer> result = repoService.findUniqueExtensions();
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/getContributors")
+    public List<Contributor> getContributors(String repoName) throws Exception {
+        return contributorService.getContributors(repoName);
+    }
+    @GetMapping("/getChangedFilesForContributor")
+    public List<String> getChangedFilesForContributor(String repoName, String name, String email) throws Exception {
+        return contributorService.getChangedFilesForContributor(repoName,name,email);
+    }
+
+
 }
