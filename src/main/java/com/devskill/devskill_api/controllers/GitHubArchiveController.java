@@ -1,6 +1,9 @@
 package com.devskill.devskill_api.controllers;
 
+import com.devskill.devskill_api.models.Commit;
 import com.devskill.devskill_api.models.Contributor;
+import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.services.CommitService;
 import com.devskill.devskill_api.services.ContributorsService;
 import com.devskill.devskill_api.services.GitHubArchiveService;
 import com.devskill.devskill_api.services.RepoService;
@@ -16,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.io.*;
 import java.util.*;
 
@@ -27,11 +32,14 @@ public class GitHubArchiveController {
     private final ContributorsService contributorService;
     private final RepoService repoService;
 
+    private final CommitService commitService;
+
     @Autowired
-    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService) {
+    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService, CommitService commitService) {
         this.gitHubArchiveService = gitHubArchiveService;
         this.contributorService = contributorService;
         this.repoService = repoService;
+        this.commitService = commitService;
     }
 
     @Operation(summary = "Get GitHub archive data", description = "Retrieve GitHub archive data from the provided file path.")
@@ -167,13 +175,41 @@ public class GitHubArchiveController {
     }
 
     @GetMapping("/getContributors")
-    public List<Contributor> getContributors(String repoName) throws Exception {
-        return contributorService.getContributors(repoName);
+    public List<Contributor> getCommitsAndContributors(String repoName) throws Exception {
+        return contributorService.getCommitsAndContributors(repoName);
     }
     @GetMapping("/getChangedFilesForContributor")
     public List<String> getChangedFilesForContributor(String repoName, String name, String email) throws Exception {
         return contributorService.getChangedFilesForContributor(repoName,name,email);
     }
+
+    @GetMapping("/getRepoDetails")
+    public ResponseEntity<?> getRepoDetails(@RequestParam String repoName) {
+        try {
+            RepositoryEntity repository = repoService.getRepoDetails(repoName);
+            return ResponseEntity.ok(repository); // Return 200 OK with the repo details
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason()); // Return the error status and message
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
+        } catch (IOException | InterruptedException e) {
+            return ResponseEntity.status(500).body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/getCommits")
+    public ResponseEntity<?> getCommits(@RequestParam String repoName, @RequestParam Long repoId) {
+        try {
+            List<Commit> commits = commitService.getCommitsForRepo(repoName, repoId);
+            return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
+        } catch (IOException | InterruptedException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
+        }
+    }
+
 
 
 }
