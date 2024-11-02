@@ -213,7 +213,7 @@ public class GitHubArchiveController {
     @GetMapping("/syncRepo")
     public ResponseEntity<?> syncRepo(@RequestParam String repoName, @RequestParam Long repoId) {
         try {
-            RepositorySyncService.SyncReport commits =  repositorySyncService.syncRepositoryData(repoName, repoId);
+            Map<String, Object> commits =  repositorySyncService.syncRepositoryData(repoName, repoId);
             return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request

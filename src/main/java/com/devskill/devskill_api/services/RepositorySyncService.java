@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class RepositorySyncService {
@@ -17,44 +19,27 @@ public class RepositorySyncService {
     @Autowired
     private ContributorsService contributorsService;
 
-    public SyncReport syncRepositoryData(String repoName, Long repoId) throws IOException, InterruptedException {
-        SyncReport syncReport = new SyncReport();
 
+    public Map<String, Object> syncRepositoryData(String repoName, Long repoId) throws IOException, InterruptedException {
+
+        List<Contributor> contributors;
+        List<Commit> commits;
         try {
             // Step 1: Fetch and save contributors
-            List<Contributor> contributors = contributorsService.getCommitsAndContributors(repoName);
-            syncReport.setContributors(contributors);
+            contributors = contributorsService.getCommitsAndContributors(repoName);
 
             // Step 2: Fetch and save commits
-            List<Commit> commits = commitService.getCommitsForRepo(repoName, repoId);
-            syncReport.setCommits(commits);
+            commits = commitService.getCommitsForRepo(repoName, repoId);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to synchronize repository data", e);
         }
 
-        return syncReport;
-    }
+        // Create a map to store contributors and commits
+        Map<String, Object> result = new HashMap<>();
+        result.put("contributors", contributors);
+        result.put("commits", commits);
 
-    public static class SyncReport {
-        private List<Contributor> contributors;
-        private List<Commit> commits;
-
-        public List<Contributor> getContributors() {
-            return contributors;
-        }
-
-        public void setContributors(List<Contributor> contributors) {
-            this.contributors = contributors;
-        }
-
-        public List<Commit> getCommits() {
-            return commits;
-        }
-
-        public void setCommits(List<Commit> commits) {
-            this.commits = commits;
-        }
+        return result;
     }
 }
-
