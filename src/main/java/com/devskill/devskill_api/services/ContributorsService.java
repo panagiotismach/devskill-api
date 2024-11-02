@@ -56,12 +56,12 @@ public class ContributorsService {
 
     public List<Contributor> getCommitsAndContributors(String repoName) throws IOException, InterruptedException {
         // Create a TreeSet to automatically sort and enforce uniqueness based on email (case-insensitive)
-        Set<Contributor> uniqueContributors = new TreeSet<>(new Comparator<Contributor>() {
-            @Override
-            public int compare(Contributor c1, Contributor c2) {
-                return c1.getEmail().toLowerCase().compareTo(c2.getEmail().toLowerCase()); // Compare emails case-insensitively
-            }
-        });
+        Set<Contributor> uniqueContributors = new TreeSet<>(
+                Comparator.comparing(
+                        Contributor::getEmail,
+                        Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER)
+                )
+        );
 
         Path folderPath = Path.of("repos", repoName);
 
@@ -86,7 +86,7 @@ public class ContributorsService {
                 Matcher matcher = pattern.matcher(cleaned);
                 if (matcher.find()) {
                     String fullName = matcher.group(1).trim();
-                    String email = matcher.group(2).trim(); // Keep email as is for storage
+                    String email = matcher.group(2).trim().equals("(null)") ? null : matcher.group(2).trim(); // Keep email as is for storage
 
                     // Create a new Contributor and add it to the TreeSet
                     Contributor contributor = new Contributor(fullName, fullName, email);

@@ -3,10 +3,7 @@ package com.devskill.devskill_api.controllers;
 import com.devskill.devskill_api.models.Commit;
 import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
-import com.devskill.devskill_api.services.CommitService;
-import com.devskill.devskill_api.services.ContributorsService;
-import com.devskill.devskill_api.services.GitHubArchiveService;
-import com.devskill.devskill_api.services.RepoService;
+import com.devskill.devskill_api.services.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,12 +31,15 @@ public class GitHubArchiveController {
 
     private final CommitService commitService;
 
+    private final RepositorySyncService repositorySyncService;
+
     @Autowired
-    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService, CommitService commitService) {
+    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService, CommitService commitService, RepositorySyncService repositorySyncService) {
         this.gitHubArchiveService = gitHubArchiveService;
         this.contributorService = contributorService;
         this.repoService = repoService;
         this.commitService = commitService;
+        this.repositorySyncService = repositorySyncService;
     }
 
     @Operation(summary = "Get GitHub archive data", description = "Retrieve GitHub archive data from the provided file path.")
@@ -176,7 +176,7 @@ public class GitHubArchiveController {
 
     @GetMapping("/getContributors")
     public List<Contributor> getCommitsAndContributors(String repoName) throws Exception {
-        return contributorService.getCommitsAndContributors(repoName);
+        return (List<Contributor>) contributorService.getCommitsAndContributors(repoName);
     }
     @GetMapping("/getChangedFilesForContributor")
     public List<String> getChangedFilesForContributor(String repoName, String name, String email) throws Exception {
@@ -201,6 +201,19 @@ public class GitHubArchiveController {
     public ResponseEntity<?> getCommits(@RequestParam String repoName, @RequestParam Long repoId) {
         try {
             List<Commit> commits = commitService.getCommitsForRepo(repoName, repoId);
+            return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
+        } catch (IOException | InterruptedException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/syncRepo")
+    public ResponseEntity<?> syncRepo(@RequestParam String repoName, @RequestParam Long repoId) {
+        try {
+            RepositorySyncService.SyncReport commits =  repositorySyncService.syncRepositoryData(repoName, repoId);
             return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
