@@ -39,6 +39,10 @@ public class RepositoryEntity {
         return repoName;
     }
 
+    public String getName() {
+        return repoName.split("/")[1];
+    }
+
     public void setRepoName(String repoName) {
         this.repoName = repoName;
     }

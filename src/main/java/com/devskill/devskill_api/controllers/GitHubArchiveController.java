@@ -3,6 +3,7 @@ package com.devskill.devskill_api.controllers;
 import com.devskill.devskill_api.models.Commit;
 import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.services.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,15 +32,18 @@ public class GitHubArchiveController {
 
     private final CommitService commitService;
 
+    private final RepositoryRepository repositoryRepository;
+
     private final RepositorySyncService repositorySyncService;
 
     @Autowired
-    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService, CommitService commitService, RepositorySyncService repositorySyncService) {
+    public GitHubArchiveController(GitHubArchiveService gitHubArchiveService, ContributorsService contributorService, RepoService repoService, CommitService commitService, RepositorySyncService repositorySyncService, RepositoryRepository repositoryRepository) {
         this.gitHubArchiveService = gitHubArchiveService;
         this.contributorService = contributorService;
         this.repoService = repoService;
         this.commitService = commitService;
         this.repositorySyncService = repositorySyncService;
+        this.repositoryRepository = repositoryRepository;
     }
 
     @Operation(summary = "Get GitHub archive data", description = "Retrieve GitHub archive data from the provided file path.")
@@ -176,7 +180,7 @@ public class GitHubArchiveController {
 
     @GetMapping("/getContributors")
     public List<Contributor> getCommitsAndContributors(String repoName) throws Exception {
-        return (List<Contributor>) contributorService.getCommitsAndContributors(repoName);
+        return (List<Contributor>) contributorService.getContributors(repoName);
     }
     @GetMapping("/getChangedFilesForContributor")
     public List<String> getChangedFilesForContributor(String repoName, String name, String email) throws Exception {
@@ -198,28 +202,34 @@ public class GitHubArchiveController {
     }
 
     @GetMapping("/getCommits")
-    public ResponseEntity<?> getCommits(@RequestParam String repoName, @RequestParam Long repoId) {
+    public ResponseEntity<?> getCommits(@RequestParam String repoName, @RequestParam String repoUrl) {
         try {
-            List<Commit> commits = commitService.getCommitsForRepo(repoName, repoId);
+            // Check if a repository exists by both repoName and repoUrl
+            Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(repoName, repoUrl);
+
+            if (!existingRepo.isPresent()) {
+                throw new Exception("The repo is not");
+            }
+            List<Commit> commits = commitService.getCommits(existingRepo.get());
             return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
-        } catch (IOException | InterruptedException e) {
+        } catch ( Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
         }
     }
 
     @GetMapping("/syncRepo")
-    public ResponseEntity<?> syncRepo(@RequestParam String repoName, @RequestParam Long repoId) {
+    public ResponseEntity<?> syncRepo(@RequestParam String repoName) {
         try {
-            Map<String, Object> commits =  repositorySyncService.syncRepositoryData(repoName, repoId);
-            return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
+            Map<String, Object> syncData =  repositorySyncService.syncRepositoryData(repoName);
+            return ResponseEntity.ok(syncData); // Return 200 OK with the syncData
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
+                    .body(STR."Internal Server Error: \{e.getMessage()}"); // Return 500 Internal Server Error
         }
     }
 

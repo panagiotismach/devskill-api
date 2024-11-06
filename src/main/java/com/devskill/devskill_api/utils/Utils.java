@@ -88,4 +88,46 @@ public class Utils {
         return STR."Successfully downloaded and saved TAR.GZ file as \{fileName}";
     }
 
+    public Path getPathOfRepository(String repoName){
+        // Specify the path to the repositories folder
+        Path repositoryPath = Path.of("repos", repoName);
+
+        // Check if the directory exists
+        if (!Files.exists(repositoryPath) || !Files.isDirectory(repositoryPath)) {
+            throw new IllegalArgumentException("Repository folder not found: " + repositoryPath);
+        }
+
+        return repositoryPath;
+    }
+
+    public String extractRepoNameFromUrl(String url) {
+        // Remove the ".git" suffix if it exists
+        if (url.endsWith(".git")) {
+            url = url.substring(0, url.length() - 4);
+        }
+
+        // Handle SSH format
+        if (url.startsWith("git@")) {
+            // Remove everything up to the first colon
+            url = url.substring(url.indexOf(":") + 1); // This will give "organization/repo"
+        } else if (url.startsWith("https://")) {
+            // Remove the 'https://github.com/' part
+            url = url.substring(url.indexOf("github.com/") + "github.com/".length()); // This will give "organization/repo"
+        } else if (url.startsWith("http://")) {
+            // Similar for HTTP URLs
+            url = url.substring(url.indexOf("github.com/") + "github.com/".length());
+        }
+
+        // Split the URL and get the organization and repository name
+        String[] parts = url.split("/");
+        if (parts.length >= 2) {
+            String organization = parts[0];
+            String repository = parts[1];
+            return organization + "/" + repository; // Return in "organization/repo" format
+        }
+
+        throw new IllegalArgumentException("Invalid repository URL format: " + url);
+    }
+
+
 }

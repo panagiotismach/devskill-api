@@ -2,6 +2,7 @@ package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.repository.RepositoryRepository;
+import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -26,6 +27,9 @@ public class RepoService {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
+
+    @Autowired
+    private Utils utils;
 
     public Map<String, Object> getRepositories(String name) {
         Path filePath = Paths.get("files", name);  // 'files' is the folder name
@@ -174,16 +178,11 @@ public class RepoService {
     }
 
     public RepositoryEntity getRepoDetails(String repoName) throws IOException, InterruptedException, ResponseStatusException {
-        // Specify the path to the repositories folder
-        Path folderPath = Path.of("repos", repoName);
 
-        // Check if the directory exists
-        if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
-            throw new IllegalArgumentException("Repository folder not found: " + folderPath);
-        }
+        Path repositoryPath = utils.getPathOfRepository(repoName);
 
         // Build the command to run the git command
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", folderPath.toString(), "config", "--get", "remote.origin.url");
+        ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", repositoryPath.toString(), "config", "--get", "remote.origin.url");
         processBuilder.redirectErrorStream(true);  // Combine stdout and stderr
 
         // Start the process
@@ -205,55 +204,25 @@ public class RepoService {
         }
 
         // Extract the repository name from the URL
-        String extractedRepoName = extractRepoNameFromUrl(repoUrl);
+        String extractedRepoName = utils.extractRepoNameFromUrl(repoUrl);
 
         // Call the saveRepository method to save or update the repository details
-
         return saveRepository(extractedRepoName, repoUrl);
     }
 
-    private String extractRepoNameFromUrl(String url) {
-        // Remove the ".git" suffix if it exists
-        if (url.endsWith(".git")) {
-            url = url.substring(0, url.length() - 4);
-        }
-
-        // Handle SSH format
-        if (url.startsWith("git@")) {
-            // Remove everything up to the first colon
-            url = url.substring(url.indexOf(":") + 1); // This will give "organization/repo"
-        } else if (url.startsWith("https://")) {
-            // Remove the 'https://github.com/' part
-            url = url.substring(url.indexOf("github.com/") + "github.com/".length()); // This will give "organization/repo"
-        } else if (url.startsWith("http://")) {
-            // Similar for HTTP URLs
-            url = url.substring(url.indexOf("github.com/") + "github.com/".length());
-        }
-
-        // Split the URL and get the organization and repository name
-        String[] parts = url.split("/");
-        if (parts.length >= 2) {
-            String organization = parts[0];
-            String repository = parts[1];
-            return organization + "/" + repository; // Return in "organization/repo" format
-        }
-
-        throw new IllegalArgumentException("Invalid repository URL format: " + url);
-    }
-
     private RepositoryEntity saveRepository(String repoName, String repoUrl) {
+
         // Check if a repository exists by both repoName and repoUrl
         Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(repoName, repoUrl);
 
         if (existingRepo.isPresent()) {
-            // Throw ResponseStatusException with a 400 Bad Request status
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Repository with this name and URL already exists.");
+            return existingRepo.get();
         }
 
         // Create a new repository entity
         RepositoryEntity repositoryEntity = new RepositoryEntity(repoName, repoUrl);
+
         return repositoryRepository.save(repositoryEntity); // Save the new entity and return it
     }
-
 
 }

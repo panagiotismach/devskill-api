@@ -24,20 +24,21 @@ public class Commit {
     @Column(name = "message", length = 500)
     private String message;
 
-    @Column(name = "date")
+    @Column(name = "commit_date")
     private LocalDate date;
 
     @ManyToOne
     @JoinColumn(name = "repository_id", nullable = false)
     private RepositoryEntity repository;
 
-    @OneToMany(mappedBy = "commit", cascade = CascadeType.ALL)
-    private Set<FileChanged> filesChanged;
+    @Column(name = "files_changed")
+    private int filesChanged;
 
-    @OneToMany(mappedBy = "commit", cascade = CascadeType.ALL)
-    private Set<LibraryChanged> librariesChanged;
+    @Column(name = "insertions")
+    private int insertions;
 
-    // Constructors, Getters, Setters, Equals, and Hashcode
+    @Column(name = "deletions")
+    private int deletions;
 
     public Commit() {
     }
@@ -90,20 +91,12 @@ public class Commit {
         this.repository = repository;
     }
 
-    public Set<FileChanged> getFilesChanged() {
+    public int getFilesChanged() {
         return filesChanged;
     }
 
-    public void setFilesChanged(Set<FileChanged> filesChanged) {
+    public void setFilesChanged(int filesChanged) {
         this.filesChanged = filesChanged;
-    }
-
-    public Set<LibraryChanged> getLibrariesChanged() {
-        return librariesChanged;
-    }
-
-    public void setLibrariesChanged(Set<LibraryChanged> librariesChanged) {
-        this.librariesChanged = librariesChanged;
     }
 
     @Override
@@ -117,5 +110,21 @@ public class Commit {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public void setInsertions(int insertions) {
+        this.insertions = insertions;
+    }
+
+    public int getInsertions() {
+        return  insertions;
+    }
+
+    public void setDeletions(int deletions) {
+        this.deletions = deletions;
+    }
+
+    public int getDeletions() {
+        return  deletions;
     }
 }

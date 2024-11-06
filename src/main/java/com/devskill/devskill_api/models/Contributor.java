@@ -11,7 +11,7 @@ public class Contributor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "github_username", nullable = false)
+    @Column(name = "github_username", nullable = false, unique = true)
     private String githubUsername;
 
     @Column(name = "full_name")
@@ -19,8 +19,6 @@ public class Contributor {
 
     @Column(name = "email", unique = true)
     private String email;
-
-    // Constructors, Getters, Setters, Equals, and Hashcode
 
     public Contributor() {
     }

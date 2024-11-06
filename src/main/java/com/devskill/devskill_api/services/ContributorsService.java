@@ -54,7 +54,7 @@ public class ContributorsService {
         return contributors;
     }
 
-    public List<Contributor> getCommitsAndContributors(String repoName) throws IOException, InterruptedException {
+    public List<Contributor> getContributors(String repoName) throws IOException, InterruptedException {
         // Create a TreeSet to automatically sort and enforce uniqueness based on email (case-insensitive)
         Set<Contributor> uniqueContributors = new TreeSet<>(
                 Comparator.comparing(
