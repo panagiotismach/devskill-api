@@ -1,92 +1,22 @@
 package com.devskill.devskill_api.utils;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.ResponseExtractor;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
 
-import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.FileSystems;
+import java.io.InputStreamReader;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 @Component
 public class Utils {
 
-    // URL patterns as final strings
-    private static final String URL_ARCHIVE = "https://data.gharchive.org/";
-    private static final String URL_SOFTWARE_HERITAGE = "https://archive.softwareheritage.org";
-    private static final String URL_WAYBACK = "https://codeload.github.com/";
-
-    private final RestTemplate restTemplate;
-
-    /**
-     * Constructor for Utils.
-     * @param restTemplate The RestTemplate instance used for making HTTP requests.
-     */
-    @Autowired
-    public Utils(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
-
-    /**
-     * Constructs a URL based on the type and path.
-     * @param type The type of archive (softwareheritage or gharchive).
-     * @param path The dynamic part of the URL.
-     * @return The full constructed URL.
-     */
-    public String constructUrl(String type, String path) {
-        String urlPattern = type.equals("softwareheritage") ?
-                STR."\{URL_SOFTWARE_HERITAGE}/api/1/vault/flat/%s" :
-                STR."\{URL_ARCHIVE}%s.json.gz";
-        return String.format(urlPattern, path);
-    }
-
-    public String constructUrl(String type, String organization, String repository) {
-
-        String urlPattern = "";
-        if(!type.equals("wayback")){
-            return  urlPattern;
-        }
-        urlPattern =  STR."\{URL_WAYBACK}/%s/%s/zip/refs/heads/master";
-        return String.format(urlPattern, organization, repository);
-    }
-
-    /**
-     * Downloads a repository file (ZIP) from the given URL and saves it.
-     * @param url The URL from which to download the ZIP file.
-     * @return A success message if the download succeeds.
-     * @throws IOException if the download or file writing fails.
-     */
-    public String downloadRepo(String url) throws IOException {
-        // Define the file name for saving the TAR.GZ file
-        String fileName = "downloaded.tar.gz";
-
-        // Fetch the TAR.GZ file bytes from the URL as a ResponseEntity
-        ResponseEntity<byte[]> responseEntity = restTemplate.getForEntity(url, byte[].class);
-
-        // Check if the response status is OK
-        if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-            throw new IOException(STR."Failed to download file: \{responseEntity.getStatusCode()}");
-        }
-
-        // Write the response body to the file
-        try (FileOutputStream outputStream = new FileOutputStream(fileName)) {
-            byte[] fileBytes = responseEntity.getBody();
-            if (fileBytes != null) {
-                outputStream.write(fileBytes);
-            } else {
-                throw new IOException("Failed to download file: Response body is null");
-            }
-        }
-
-        return STR."Successfully downloaded and saved TAR.GZ file as \{fileName}";
-    }
+    public Utils() {}
 
     public Path getPathOfRepository(String repoName){
         // Specify the path to the repositories folder
@@ -128,6 +58,79 @@ public class Utils {
 
         throw new IllegalArgumentException("Invalid repository URL format: " + url);
     }
+
+    public boolean isFileChangeLine(String line) {
+        // A file change line must contain at least 3 parts: insertions, deletions, and file path
+
+        String[] parts = line.trim().split("\\s+");
+        return parts.length >= 3 && isNumeric(parts[0]) && isNumeric(parts[1]);
+    }
+
+    public boolean isNumeric(String str) {
+        return str.matches("\\d+");
+    }
+
+    public LocalDate parseDate(String dateStr) {
+        try {
+
+            return LocalDate.parse(dateStr);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+
+    public int executeGitFileCount(Path repositoryPath) throws IOException, InterruptedException {
+
+        String command = "git -C " + repositoryPath.toString() + " ls-files";
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+        Process process = processBuilder.start();
+
+        int fileCount = 0;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            while (reader.readLine() != null) {
+                fileCount++;  // Each line represents a file
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Git command failed with exit code: " + exitCode);
+        }
+
+        return fileCount;
+    }
+
+    public long getGitRepoSizeInMB(Path repositoryPath) throws IOException {
+        // Use an array or other mutable object to hold the total size
+        final long[] totalSizeInBytes = {0}; // Array to hold the total size value
+
+        // Walk the file tree starting from the repository path
+        Files.walkFileTree(repositoryPath, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                // Add the size of the current file to the total size
+                totalSizeInBytes[0] += attrs.size();
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                // Handle the case where a file can't be accessed (e.g., permission denied)
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        // Convert bytes to MB and return
+        return totalSizeInBytes[0] / (1024 * 1024);
+    }
+
+    public String getFileExtension(String filePath) {
+        String fileName = filePath.contains("/") ? filePath.substring(filePath.lastIndexOf('/') + 1) : filePath;
+        return fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "unknown";
+    }
+
 
 
 }

@@ -2,6 +2,9 @@ package com.devskill.devskill_api.models;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 
 @Entity
 @Table(name = "contributors")
@@ -19,6 +22,9 @@ public class Contributor {
 
     @Column(name = "email", unique = true)
     private String email;
+
+    @OneToMany(mappedBy = "contributor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ContributorRepositoryEntity> contributorRepositories = new HashSet<>();
 
     public Contributor() {
     }
@@ -59,6 +65,14 @@ public class Contributor {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Set<ContributorRepositoryEntity> getContributorRepositories() {
+        return contributorRepositories;
+    }
+
+    public void setContributorRepositories(Set<ContributorRepositoryEntity> contributorRepositories) {
+        this.contributorRepositories = contributorRepositories;
     }
 
     @Override

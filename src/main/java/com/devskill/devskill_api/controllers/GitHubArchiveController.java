@@ -5,12 +5,6 @@ import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.services.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.io.*;
 import java.util.*;
 
@@ -71,40 +64,21 @@ public class GitHubArchiveController {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason()); // Return the error status and message
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
-        } catch (IOException | InterruptedException e) {
+        } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
         }
     }
 
-    @GetMapping("/getCommits")
-    public ResponseEntity<?> getCommits(@RequestParam String repoName, @RequestParam String repoUrl) {
+    @GetMapping("/output")
+    public ResponseEntity<?> output() {
         try {
-            // Check if a repository exists by both repoName and repoUrl
-            Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(repoName, repoUrl);
-
-            if (!existingRepo.isPresent()) {
-                throw new Exception("The repo is not");
-            }
-            List<Commit> commits = commitService.getCommits(existingRepo.get());
-            return ResponseEntity.ok(commits); // Return 200 OK with the repo commits
+            Map<String, Object> i = repoService.processFiles();
+            return ResponseEntity.ok(i); // Return 200 OK with the repo commits
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
         } catch ( Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
-        }
-    }
-
-    @GetMapping("/syncRepo")
-    public ResponseEntity<?> syncRepo(@RequestParam String repoName) {
-        try {
-            Map<String, Object> syncData =  repositorySyncService.syncRepositoryData(repoName);
-            return ResponseEntity.ok(syncData); // Return 200 OK with the syncData
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(STR."Internal Server Error: \{e.getMessage()}"); // Return 500 Internal Server Error
         }
     }
 

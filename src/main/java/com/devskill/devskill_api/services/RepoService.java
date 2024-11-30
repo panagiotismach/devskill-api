@@ -7,15 +7,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.ErrorResponseException;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -135,9 +132,10 @@ public class RepoService {
         return response;
     }
 
-    public Map<String, Integer> findUniqueExtensions() {
-        Path folderPath = Paths.get("repos");
-        File projectDirectory = new File(String.valueOf(folderPath));
+
+    private Map<String, Integer> findUniqueExtensions(String repoName) {
+        Path repositoryPath = utils.getPathOfRepository(repoName);
+        File projectDirectory = new File(String.valueOf(repositoryPath));
         Stack<File> stack = new Stack<>();
         Map<String, Integer> fileExtensionCount = new HashMap<>();
 
@@ -177,18 +175,51 @@ public class RepoService {
                 ));
     }
 
-    public RepositoryEntity getRepoDetails(String repoName) throws IOException, InterruptedException, ResponseStatusException {
+    public RepositoryEntity getRepoDetails(String repoName) throws Exception {
 
         Path repositoryPath = utils.getPathOfRepository(repoName);
 
-        // Build the command to run the git command
+       String repoUrl = retrieveRepoUrl(repositoryPath);
+
+       if(repoUrl.isEmpty()){
+         throw new Exception();
+       }
+
+       LocalDate lastCommitDate = retrieveLastCommitDate(repositoryPath);
+
+        String extractedRepoName = utils.extractRepoNameFromUrl(repoUrl);
+
+        Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(extractedRepoName, repoUrl);
+
+        if (existingRepo.isPresent()) {
+          RepositoryEntity  repo = existingRepo.get();
+          repo.setLast_commit_date(lastCommitDate);
+          List<String> extensions = findUniqueExtensions(repoName).keySet().stream().toList();
+          repo.setExtensions(extensions);
+          repositoryRepository.save(repo);
+          return repo;
+        }
+
+        LocalDate creationDate = retrieveCreationDate(repositoryPath);
+
+        List<String> extensions = findUniqueExtensions(repoName).keySet().stream().toList();
+
+        // Create and save a new RepositoryEntity with the relevant details
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions);
+
+        // Save the repository entity and return it
+        return repositoryRepository.save(repositoryEntity);
+    }
+
+    private String retrieveRepoUrl(Path repositoryPath) throws IOException, InterruptedException {
+
         ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", repositoryPath.toString(), "config", "--get", "remote.origin.url");
         processBuilder.redirectErrorStream(true);  // Combine stdout and stderr
 
         // Start the process
         Process process = processBuilder.start();
 
-        // Read the output from the process
+        // Read the output from the process (repo URL)
         String repoUrl = "";
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
@@ -203,26 +234,55 @@ public class RepoService {
             throw new IOException("Error occurred while executing git command, exit code: " + exitCode);
         }
 
-        // Extract the repository name from the URL
-        String extractedRepoName = utils.extractRepoNameFromUrl(repoUrl);
-
-        // Call the saveRepository method to save or update the repository details
-        return saveRepository(extractedRepoName, repoUrl);
+        return repoUrl;
     }
 
-    private RepositoryEntity saveRepository(String repoName, String repoUrl) {
+    private LocalDate retrieveCreationDate(Path repositoryPath) throws IOException {
 
-        // Check if a repository exists by both repoName and repoUrl
-        Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(repoName, repoUrl);
+        ProcessBuilder firstCommitDateProcessBuilder = new ProcessBuilder(
+                "git", "-C", repositoryPath.toString(), "log", "--pretty=format:%cd", "--date=short", "--reverse"
+        );
+        firstCommitDateProcessBuilder.redirectErrorStream(true);
 
-        if (existingRepo.isPresent()) {
-            return existingRepo.get();
+        LocalDate firstCommitDate;
+
+
+        Process firstCommitDateProcess = firstCommitDateProcessBuilder.start();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(firstCommitDateProcess.getInputStream()))) {
+
+            String commitDate = reader.readLine();
+            if (commitDate == null || commitDate.isEmpty()) {
+                throw new IOException("Failed to retrieve any commits.");
+            }
+
+            firstCommitDate = utils.parseDate(commitDate.trim());
         }
 
-        // Create a new repository entity
-        RepositoryEntity repositoryEntity = new RepositoryEntity(repoName, repoUrl);
 
-        return repositoryRepository.save(repositoryEntity); // Save the new entity and return it
+        return firstCommitDate;
     }
 
+        private LocalDate retrieveLastCommitDate (Path repositoryPath) throws IOException, InterruptedException {
+
+            ProcessBuilder lastCommitDateProcessBuilder = new ProcessBuilder(
+                    "git", "-C", repositoryPath.toString(), "log", "-1", "--pretty=format:%cd", "--date=short"
+            );
+            lastCommitDateProcessBuilder.redirectErrorStream(true);
+
+            LocalDate lastCommitDate;
+
+
+            Process lastCommitDateProcess = lastCommitDateProcessBuilder.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(lastCommitDateProcess.getInputStream()))) {
+                lastCommitDate = utils.parseDate(reader.readLine().trim());
+            }
+            if (lastCommitDateProcess.waitFor() != 0) {
+                throw new IOException("Failed to retrieve the last commit date.");
+            }
+
+            return lastCommitDate;
+        }
+
+
 }
+

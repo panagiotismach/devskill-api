@@ -3,8 +3,6 @@ package com.devskill.devskill_api.models;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @Table(name = "commits")

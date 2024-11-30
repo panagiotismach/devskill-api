@@ -1,6 +1,5 @@
 package com.devskill.devskill_api.repository;
 
-import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.FileChanged;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
