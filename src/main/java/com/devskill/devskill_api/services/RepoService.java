@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -133,8 +135,7 @@ public class RepoService {
     }
 
 
-    private Map<String, Integer> findUniqueExtensions(String repoName) {
-        Path repositoryPath = utils.getPathOfRepository(repoName);
+    private Map<String, Integer> findUniqueExtensions(Path repositoryPath) {
         File projectDirectory = new File(String.valueOf(repositoryPath));
         Stack<File> stack = new Stack<>();
         Map<String, Integer> fileExtensionCount = new HashMap<>();
@@ -166,7 +167,6 @@ public class RepoService {
         return fileExtensionCount.entrySet()
                 .stream()
                 .sorted((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()))
-                .limit(4)
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -175,14 +175,12 @@ public class RepoService {
                 ));
     }
 
-    public RepositoryEntity getRepoDetails(String repoName) throws Exception {
-
-        Path repositoryPath = utils.getPathOfRepository(repoName);
+    public RepositoryEntity getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
 
        String repoUrl = retrieveRepoUrl(repositoryPath);
 
        if(repoUrl.isEmpty()){
-         throw new Exception();
+         throw new Exception("The url is empty");
        }
 
        LocalDate lastCommitDate = retrieveLastCommitDate(repositoryPath);
@@ -194,7 +192,7 @@ public class RepoService {
         if (existingRepo.isPresent()) {
           RepositoryEntity  repo = existingRepo.get();
           repo.setLast_commit_date(lastCommitDate);
-          List<String> extensions = findUniqueExtensions(repoName).keySet().stream().toList();
+          List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
           repo.setExtensions(extensions);
           repositoryRepository.save(repo);
           return repo;
@@ -202,10 +200,10 @@ public class RepoService {
 
         LocalDate creationDate = retrieveCreationDate(repositoryPath);
 
-        List<String> extensions = findUniqueExtensions(repoName).keySet().stream().toList();
+        List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
 
         // Create and save a new RepositoryEntity with the relevant details
-        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions);
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions, isTrending);
 
         // Save the repository entity and return it
         return repositoryRepository.save(repositoryEntity);
@@ -281,6 +279,29 @@ public class RepoService {
             }
 
             return lastCommitDate;
+        }
+
+        public List<String> getTrendingRepositories() throws Exception {
+            try {
+                String url = "https://github.com/trending";
+
+                Document document = Jsoup.connect(url).get();
+
+                // List to store repository names
+                List<String> repositoryNames = new ArrayList<>();
+
+                for (Element repoElement : document.select("article.Box-row")) {
+                    String repoName = repoElement.select("h2").text().replace(" ", "").replace("\n", "");
+                    repositoryNames.add(repoName);
+                }
+
+
+                return repositoryNames;
+
+            } catch (Exception e) {
+
+                throw new Exception(e);
+            }
         }
 
 

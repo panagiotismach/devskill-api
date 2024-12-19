@@ -131,8 +131,7 @@ public class ContributorsService {
         return changedFiles;
     }
 
-    public List<Contribution> getContributions(RepositoryEntity repository) throws IOException, InterruptedException {
-        Path repositoryPath = utils.getPathOfRepository(repository.getName());
+    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath) throws Exception {
 
         // Git command to get commit history
         ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", repositoryPath.toString(),
@@ -172,16 +171,13 @@ public class ContributorsService {
                 } else if (utils.isFileChangeLine(line)) {
                     // Parse file change line
                     String[] fileChangeParts = line.trim().split("\\s+");
-                    if (fileChangeParts.length < 3) {
-                        logger.warn("Skipping malformed file change line: " + line);
-                        continue;
-                    }
 
-                    int insertions = fileChangeParts[0].equals("-") ? 0 : Integer.parseInt(fileChangeParts[0]);
-                    int deletions = fileChangeParts[1].equals("-") ? 0 : Integer.parseInt(fileChangeParts[1]);
                     String filePath = fileChangeParts[2];
 
                     String fileExtension = utils.getFileExtension(filePath);
+
+                    int insertions = fileChangeParts[0].equals("-") ? 0 : Integer.parseInt(fileChangeParts[0]);
+                    int deletions = fileChangeParts[1].equals("-") ? 0 : Integer.parseInt(fileChangeParts[1]);
 
                     // Aggregate contributions by contributor and extension
                     String key = authorEmail + ":" + fileExtension;

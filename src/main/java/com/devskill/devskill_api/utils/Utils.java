@@ -30,6 +30,46 @@ public class Utils {
         return repositoryPath;
     }
 
+    public Path getPathOfRepositories(String name){
+
+        // Path to the repositories folder
+        Path outputDir = Path.of("output");
+
+        // Check if the 'output' directory exists
+        if (!Files.exists(outputDir) || !Files.isDirectory(outputDir)) {
+            throw new IllegalArgumentException("Output folder not found: " + outputDir);
+        }
+
+        // Path to the requested file in the 'output' folder
+        Path repositoryFile = outputDir.resolve(name);
+
+        // Check if the file exists
+        if (!Files.exists(repositoryFile) || Files.isDirectory(repositoryFile)) {
+            throw new IllegalArgumentException("Repository file not found: " + repositoryFile);
+        }
+
+        return repositoryFile;
+    }
+
+    public Path getPath(String repoName){
+
+        String name;
+        Path repositoryPath;
+
+        if (repoName.startsWith("https://github.com/")) {
+            name = extractRepoNameFromUrl(repoName);
+        } else {
+            name = repoName;
+        }
+
+        // Replace all '/' with '-' in the repoName
+        name = name.replace("/", "-");
+
+        repositoryPath = Path.of("repos", name);
+
+        return repositoryPath;
+    }
+
     public String extractRepoNameFromUrl(String url) {
         // Remove the ".git" suffix if it exists
         if (url.endsWith(".git")) {
@@ -60,10 +100,29 @@ public class Utils {
     }
 
     public boolean isFileChangeLine(String line) {
-        // A file change line must contain at least 3 parts: insertions, deletions, and file path
-
         String[] parts = line.trim().split("\\s+");
-        return parts.length >= 3 && isNumeric(parts[0]) && isNumeric(parts[1]);
+
+        // A valid file change line must have exactly 3 parts
+        if (parts.length != 3) {
+            return false;
+        }
+
+        // Check if the first two parts are numeric
+        if (!isNumeric(parts[0]) || !isNumeric(parts[1])) {
+            return false;
+        }
+
+        // Parse insertions and deletions
+        int insertions = Integer.parseInt(parts[0]);
+        int deletions = Integer.parseInt(parts[1]);
+
+        // Both insertions and deletions must not be zero
+        if (insertions == 0 && deletions == 0) {
+            return false;
+        }
+
+        // The third part (file path) must be non-empty
+        return !parts[2].isEmpty();
     }
 
     public boolean isNumeric(String str) {
@@ -126,9 +185,35 @@ public class Utils {
         return totalSizeInBytes[0] / (1024 * 1024);
     }
 
-    public String getFileExtension(String filePath) {
-        String fileName = filePath.contains("/") ? filePath.substring(filePath.lastIndexOf('/') + 1) : filePath;
-        return fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "unknown";
+    public String getFileExtension(String filePath) throws Exception {
+
+        if (filePath == null || filePath.trim().isEmpty()) {
+            throw new Exception("The file path is empty"); // Return empty for null or empty input
+        }
+
+        // Normalize file path to use '/' as the directory separator
+        String normalizedPath = filePath.replace("\\", "/").trim();
+
+        // Extract the file name after the last '/'
+        int lastSlashIndex = normalizedPath.lastIndexOf('/');
+        String fileName = (lastSlashIndex >= 0)
+                ? normalizedPath.substring(lastSlashIndex + 1)
+                : normalizedPath;
+
+        // Special case: if the file starts with a dot and has no other dots, return the whole name
+        if (fileName.startsWith(".") && fileName.lastIndexOf('.') == 0) {
+            return fileName;
+        }
+
+        // Find the last dot in the file name
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            // Return the substring after the last dot
+            return fileName.substring(lastDotIndex + 1);
+        }
+
+        // If no valid extension, return empty string
+        return "noExtension";
     }
 
 

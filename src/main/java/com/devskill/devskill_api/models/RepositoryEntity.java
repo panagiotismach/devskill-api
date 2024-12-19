@@ -34,18 +34,19 @@ public class RepositoryEntity {
     @OneToMany(mappedBy = "repository", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ContributorRepositoryEntity> contributorRepositories = new HashSet<>();
 
-
-    // Constructors, Getters, Setters, Equals, and Hashcode
+    @Column(name = "trending")
+    private boolean trending;
 
     public RepositoryEntity() {
     }
 
-    public RepositoryEntity(String repoName, String repoUrl, LocalDate creation_date, LocalDate last_commit_date, List<String> extensions) {
+    public RepositoryEntity(String repoName, String repoUrl, LocalDate creation_date, LocalDate last_commit_date, List<String> extensions, boolean isTrending) {
         this.repoName = repoName;
         this.repoUrl = repoUrl;
         this.creation_date = creation_date;
         this.extensions = extensions;
         this.last_commit_date = last_commit_date;
+        this.trending = isTrending;
     }
 
     public Long getId() {
@@ -106,6 +107,14 @@ public class RepositoryEntity {
 
     public void setExtensions(List<String> extensions) {
         this.extensions = extensions;
+    }
+
+    public boolean trending() {
+        return trending;
+    }
+
+    public void setTrending(boolean trending) {
+        this.trending = trending;
     }
 
     @Override
