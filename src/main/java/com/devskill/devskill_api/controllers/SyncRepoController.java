@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ public class SyncRepoController {
     @Autowired
     private Utils utils;
 
-    private static final Logger logger = LoggerFactory.getLogger(SyncRepoController.class);
+    private static final Logger logger = LoggerFactory.getLogger(frontController.class);
 
     @GetMapping("/syncRepo")
     public ResponseEntity<?> syncRepo(@RequestParam String repoName) {

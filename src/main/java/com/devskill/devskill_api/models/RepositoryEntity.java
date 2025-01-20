@@ -1,6 +1,7 @@
 package com.devskill.devskill_api.models;
 
 import com.devskill.devskill_api.utils.ListToJsonConverter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -32,6 +33,7 @@ public class RepositoryEntity {
     private List<String> extensions;
 
     @OneToMany(mappedBy = "repository", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private Set<ContributorRepositoryEntity> contributorRepositories = new HashSet<>();
 
     @Column(name = "trending")
