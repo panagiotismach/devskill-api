@@ -1,5 +1,6 @@
 package com.devskill.devskill_api.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
@@ -24,6 +25,7 @@ public class Contributor {
     private String email;
 
     @OneToMany(mappedBy = "contributor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private Set<ContributorRepositoryEntity> contributorRepositories = new HashSet<>();
 
     public Contributor() {

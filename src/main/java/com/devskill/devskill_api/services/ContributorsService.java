@@ -11,6 +11,9 @@ import com.devskill.devskill_api.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -228,6 +231,47 @@ public class ContributorsService {
             Contribution newContribution = new Contribution(contributor, extension, insertions, deletions);
             return contributionRepository.save(newContribution);
         }
+    }
+
+    public Page<Contributor> findContributorsByRepository(Long repositoryId, Pageable pageable) {
+
+        RepositoryEntity repository = new RepositoryEntity();
+        repository.setId(repositoryId);
+
+
+
+        // Find all associations for the repository
+        Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByRepository(repository, pageable);
+
+        // Extract contributors from the associations
+        List<Contributor> contributors = associations.stream()
+                .map(ContributorRepositoryEntity::getContributor)
+                .distinct() // Optional, to ensure unique contributors
+                .toList();
+
+        return new PageImpl<>(contributors, pageable, associations.getTotalElements());
+    }
+
+    public Page<RepositoryEntity> findRepositoriesByContributor(Long contributorId, Pageable pageable) {
+
+        Contributor contributor = new Contributor();
+        contributor.setId(contributorId);
+
+
+
+        // Find all associations for the repository
+        Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByContributor(contributor, pageable);
+
+        List<RepositoryEntity> repositories = associations.stream()
+                .map(ContributorRepositoryEntity::getRepository)
+                .distinct()
+                .toList();
+
+        return new PageImpl<>(repositories, pageable, associations.getTotalElements());
+    }
+
+    public Page<Contributor> findContributors( Pageable pageable) {
+        return contributorRepository.findAll(pageable);
     }
 
 
