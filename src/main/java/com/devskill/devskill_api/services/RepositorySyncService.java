@@ -18,6 +18,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class RepositorySyncService {
@@ -151,5 +156,63 @@ public class RepositorySyncService {
         } else {
             logger.info("Repository does not exist: {}", repositoryPath);
         }
+    }
+
+    public void executeSync(int files, long megabyte, List<String> repositories, boolean isTrending) throws Exception {
+
+        ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
+
+        AtomicBoolean trending = new AtomicBoolean(isTrending);
+
+        List<String> trendingRepositories;
+        if(!isTrending){
+            trendingRepositories =  repoService.getTrendingRepositories();
+        } else {
+            trendingRepositories = new ArrayList<>();
+        }
+
+        backgroundExecutor.submit(() -> {
+            try {
+                // Create a fixed thread pool with 5 threads for parallel processing
+                ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+                // Store results in a thread-safe map
+                Map<String, Object> results = new ConcurrentHashMap<>();
+
+                // Submit tasks for each repository
+                List<Future<?>> futures = new ArrayList<>();
+                for (String repo : repositories) {
+
+                    if (!trendingRepositories.isEmpty() && trendingRepositories.contains(repo)){
+                        trending.set(true);
+                    }
+
+                    futures.add(executorService.submit(() -> {
+                        try {
+                            // Process each repository and store results
+                            Map<String, Object> syncData = syncRepositoryData(repo, files, megabyte, trending.get());
+                            results.put(repo, syncData);
+                        } catch (Exception e) {
+                            results.put(repo, STR."Error: \{e.getMessage()}");
+                        }
+                    }));
+                }
+
+                // Wait for all tasks to complete
+                for (Future<?> future : futures) {
+                    future.get(); // Blocks until each task is finished
+                }
+
+                logger.info("Results: {}", results);
+
+                // Shutdown the executor service after completing all tasks
+                executorService.shutdown();
+
+            } catch (Exception e) {
+                logger.info(e.getMessage());
+            } finally {
+                backgroundExecutor.shutdown();
+            }
+        });
     }
 }

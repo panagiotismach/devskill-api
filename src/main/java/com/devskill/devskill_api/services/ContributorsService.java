@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
@@ -40,7 +41,8 @@ public class ContributorsService {
 
     private static final Logger logger = LoggerFactory.getLogger(CommitService.class);
 
-   public ContributorsService (){}
+    public ContributorsService() {
+    }
 
     public List<Contributor> getContributors(String repoName) throws IOException, InterruptedException {
         // Create a TreeSet to automatically sort and enforce uniqueness based on email (case-insensitive)
@@ -184,7 +186,7 @@ public class ContributorsService {
 
                     // Aggregate contributions by contributor and extension
                     String key = authorEmail + ":" + fileExtension;
-                    Contribution contribution = getOrCreateContribution(currentContributor,fileExtension,insertions,deletions);
+                    Contribution contribution = getOrCreateContribution(currentContributor, fileExtension, insertions, deletions);
 
                     contributionsMap.put(key, contribution);
                 }
@@ -204,12 +206,12 @@ public class ContributorsService {
 
     private void saveContributorRepository(Contributor contributor, RepositoryEntity repository) {
 
-       Optional<ContributorRepositoryEntity> contributorRepositoryEntity = contributorRepositoryRepository.findByContributorAndRepository(contributor,repository);
+        Optional<ContributorRepositoryEntity> contributorRepositoryEntity = contributorRepositoryRepository.findByContributorAndRepository(contributor, repository);
 
-       if(contributorRepositoryEntity.isEmpty()){
-           ContributorRepositoryEntity contributorRepositoryEntry = new ContributorRepositoryEntity(contributor, repository);
-           contributorRepositoryRepository.save(contributorRepositoryEntry);
-       }
+        if (contributorRepositoryEntity.isEmpty()) {
+            ContributorRepositoryEntity contributorRepositoryEntry = new ContributorRepositoryEntity(contributor, repository);
+            contributorRepositoryRepository.save(contributorRepositoryEntry);
+        }
 
     }
 
@@ -239,7 +241,6 @@ public class ContributorsService {
         repository.setId(repositoryId);
 
 
-
         // Find all associations for the repository
         Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByRepository(repository, pageable);
 
@@ -258,7 +259,6 @@ public class ContributorsService {
         contributor.setId(contributorId);
 
 
-
         // Find all associations for the repository
         Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByContributor(contributor, pageable);
 
@@ -270,9 +270,35 @@ public class ContributorsService {
         return new PageImpl<>(repositories, pageable, associations.getTotalElements());
     }
 
-    public Page<Contributor> findContributors( Pageable pageable) {
-        return contributorRepository.findAll(pageable);
+    public Map<String, Object> findContributors(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorsPage = contributorRepository.findAll(pageable);
+
+        return utils.constructPageResponse(contributorsPage);
     }
+
+    public Map<String, Object> retrieveContributorsForRepository(Long repoId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorsPage = findContributorsByRepository(repoId, pageable);
+
+        return utils.constructPageResponse(contributorsPage);
+    }
+
+    public Map<String,Object> findByGithubUsernameOrFullName(String username, String name, int page, int size){
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorPage = contributorRepository.findByGithubUsernameOrFullName(username,name, pageable);
+
+
+        return utils.constructPageResponse(contributorPage);
+    }
+
 
 
 }

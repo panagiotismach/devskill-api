@@ -1,9 +1,7 @@
 package com.devskill.devskill_api.controllers;
 
-import com.devskill.devskill_api.models.Commit;
 import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
-import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.services.*;
 import com.devskill.devskill_api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import java.io.*;
 import java.nio.file.Path;
 import java.util.*;
-
 
 @RestController
 public class GitHubArchiveController {
@@ -28,18 +24,7 @@ public class GitHubArchiveController {
     private  RepoService repoService;
 
     @Autowired
-    private CommitService commitService;
-
-    @Autowired
-    private  RepositoryRepository repositoryRepository;
-
-    @Autowired
-    private  RepositorySyncService repositorySyncService;
-
-    @Autowired
     private Utils utils;
-
-
 
     @GetMapping("/getRepositories")
     public ResponseEntity<?> getRepositories(@RequestParam String name) {
@@ -87,7 +72,5 @@ public class GitHubArchiveController {
                     .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
         }
     }
-
-
 
 }

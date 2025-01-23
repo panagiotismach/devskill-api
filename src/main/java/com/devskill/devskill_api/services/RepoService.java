@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -303,6 +306,33 @@ public class RepoService {
                 throw new Exception(e);
             }
         }
+
+        public Map<String, Object> retrieveRepositories(int page, int size){
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Retrieve repositories with pagination
+            Page<RepositoryEntity> repositoryPage = repositoryRepository.findAll(pageable);
+
+            // Customize the response to include metadata
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+
+            return response;
+        }
+
+        public Map<String,Object> findByRepoNameOrRepoUrl(String name, String url, int page, int size){
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<RepositoryEntity> repositoryPage = repositoryRepository.findByRepoNameOrRepoUrl(name,url, pageable);
+
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+
+            return response;
+        }
+
+
+
 
 
 }
