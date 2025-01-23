@@ -131,7 +131,7 @@ public class RepoService {
         try {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("output.json"), response);
         } catch (IOException e) {
-            throw new RuntimeException("Error saving JSON response: " + e.getMessage());
+            throw new RuntimeException(STR."Error saving JSON response: \{e.getMessage()}");
         }
 
         return response;
@@ -232,7 +232,7 @@ public class RepoService {
         // Wait for the process to finish
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new IOException("Error occurred while executing git command, exit code: " + exitCode);
+            throw new IOException(STR."Error occurred while executing git command, exit code: \{exitCode}");
         }
 
         return repoUrl;
@@ -330,10 +330,5 @@ public class RepoService {
 
             return response;
         }
-
-
-
-
-
 }
 

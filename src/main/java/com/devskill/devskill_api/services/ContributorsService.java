@@ -57,7 +57,7 @@ public class ContributorsService {
 
         // Check if the directory exists
         if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
-            throw new IllegalArgumentException("Repository folder not found: " + folderPath);
+            throw new IllegalArgumentException(STR."Repository folder not found: \{folderPath}");
         }
 
         // Build the command to run the git log command
