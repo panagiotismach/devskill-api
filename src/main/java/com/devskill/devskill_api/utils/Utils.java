@@ -144,7 +144,6 @@ public class Utils {
         }
     }
 
-
     public int executeGitFileCount(Path repositoryPath) throws IOException, InterruptedException {
 
         String command = "git -C " + repositoryPath.toString() + " ls-files";

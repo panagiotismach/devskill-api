@@ -39,8 +39,6 @@ public class ContributorsService {
     @Autowired
     private Utils utils;
 
-    private static final Logger logger = LoggerFactory.getLogger(CommitService.class);
-
     public ContributorsService() {
     }
 
@@ -196,7 +194,6 @@ public class ContributorsService {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            logger.error("Git command failed with exit code: " + exitCode);
             throw new IOException("Error occurred while executing git command, exit code: " + exitCode);
         }
 
@@ -298,7 +295,4 @@ public class ContributorsService {
 
         return utils.constructPageResponse(contributorPage);
     }
-
-
-
 }

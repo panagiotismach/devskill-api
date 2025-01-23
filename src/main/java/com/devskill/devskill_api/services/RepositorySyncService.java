@@ -29,9 +29,7 @@ public class RepositorySyncService {
 
     @Autowired
     private RepoService repoService;
-    @Autowired
-    private CommitService commitService;
-
+    
     @Autowired
     private ContributorsService contributorsService;
 
@@ -75,7 +73,6 @@ public class RepositorySyncService {
         }
 
     }
-
     private void checkRepository(Path repositoryPath, int files, long megabyte) throws Exception {
 
         int filesCount = utils.executeGitFileCount(repositoryPath);
@@ -87,7 +84,6 @@ public class RepositorySyncService {
             throw new Exception(STR."The files are \{filesCount} and the repo size is \{repoSize} mb. The repository have to has over \{files} files and has to be over \{megabyte} mb.");
         }
     }
-
     private void cloneRepository(String repoName, Path repositoryPath) throws Exception {
 
         String url;
@@ -111,7 +107,6 @@ public class RepositorySyncService {
         }
 
     }
-
     public List<String> readRepositoryNamesFromJson() throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();

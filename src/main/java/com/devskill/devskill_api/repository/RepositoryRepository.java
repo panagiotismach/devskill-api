@@ -14,12 +14,7 @@ import java.util.Optional;
 @Repository
 public interface RepositoryRepository extends JpaRepository<RepositoryEntity, Long> {
     // You can define custom query methods here if needed
-
-    // Find a repository by both name and URL (case-insensitive)
     Optional<RepositoryEntity> findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(String repoName, String repoUrl);
-
     Page<RepositoryEntity> findByRepoNameOrRepoUrl(String repoName, String repoUrl, Pageable pageable);
-
     Page<RepositoryEntity> findAllByTrending(boolean trending, Pageable pageable);
-
 }

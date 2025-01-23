@@ -14,12 +14,9 @@ public interface ContributorRepositoryRepository extends JpaRepository<Contribut
 
     // Find all repositories for a specific contributor
     List<ContributorRepositoryEntity> findByContributor(Contributor contributor);
-
     // Find all contributors for a specific repository
     Page<ContributorRepositoryEntity> findByRepository(RepositoryEntity repository, Pageable pageable);
-
     Page<ContributorRepositoryEntity> findByContributor(Contributor contributor, Pageable pageable);
-
     // Check if a specific contributor-repository association exists
     Optional<ContributorRepositoryEntity> findByContributorAndRepository(Contributor contributor, RepositoryEntity repository);
 }
