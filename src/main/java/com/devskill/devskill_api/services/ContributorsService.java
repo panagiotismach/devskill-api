@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -134,7 +136,7 @@ public class ContributorsService {
         return changedFiles;
     }
 
-    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath, boolean isExisted) throws Exception {
+    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath, boolean isExisted, LocalDate preLastCommitDate) throws Exception {
 
         List<String> command = new ArrayList<>();
         command.add("git");
@@ -145,9 +147,10 @@ public class ContributorsService {
         command.add("--numstat");
         command.add("--date=short");
 
-        // Add --since option conditionally
-        if (isExisted) {
-            command.add(STR."--since=\{repository.getLast_commit_date()}");
+        if (isExisted && preLastCommitDate != null) {
+
+            String formattedDate = preLastCommitDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            command.add("--since=" + formattedDate);
         }
 
 
