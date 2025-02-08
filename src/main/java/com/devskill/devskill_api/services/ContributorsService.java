@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
@@ -38,9 +39,8 @@ public class ContributorsService {
     @Autowired
     private Utils utils;
 
-    private static final Logger logger = LoggerFactory.getLogger(CommitService.class);
-
-   public ContributorsService (){}
+    public ContributorsService() {
+    }
 
     public List<Contributor> getContributors(String repoName) throws IOException, InterruptedException {
         // Create a TreeSet to automatically sort and enforce uniqueness based on email (case-insensitive)
@@ -55,7 +55,7 @@ public class ContributorsService {
 
         // Check if the directory exists
         if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
-            throw new IllegalArgumentException("Repository folder not found: " + folderPath);
+            throw new IllegalArgumentException(STR."Repository folder not found: \{folderPath}");
         }
 
         // Build the command to run the git log command
@@ -134,11 +134,25 @@ public class ContributorsService {
         return changedFiles;
     }
 
-    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath) throws Exception {
+    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath, boolean isExisted) throws Exception {
+
+        List<String> command = new ArrayList<>();
+        command.add("git");
+        command.add("-C");
+        command.add(repositoryPath.toString());
+        command.add("log");
+        command.add("--pretty=format:%H - %an - %ae");
+        command.add("--numstat");
+        command.add("--date=short");
+
+        // Add --since option conditionally
+        if (isExisted) {
+            command.add(STR."--since=\{repository.getLast_commit_date()}");
+        }
+
 
         // Git command to get commit history
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", repositoryPath.toString(),
-                "log", "--pretty=format:%H - %an - %ae", "--numstat", "--date=short");
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
 
         Process process = processBuilder.start();
@@ -184,7 +198,7 @@ public class ContributorsService {
 
                     // Aggregate contributions by contributor and extension
                     String key = authorEmail + ":" + fileExtension;
-                    Contribution contribution = getOrCreateContribution(currentContributor,fileExtension,insertions,deletions);
+                    Contribution contribution = getOrCreateContribution(currentContributor, fileExtension, insertions, deletions);
 
                     contributionsMap.put(key, contribution);
                 }
@@ -194,7 +208,6 @@ public class ContributorsService {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            logger.error("Git command failed with exit code: " + exitCode);
             throw new IOException("Error occurred while executing git command, exit code: " + exitCode);
         }
 
@@ -204,12 +217,12 @@ public class ContributorsService {
 
     private void saveContributorRepository(Contributor contributor, RepositoryEntity repository) {
 
-       Optional<ContributorRepositoryEntity> contributorRepositoryEntity = contributorRepositoryRepository.findByContributorAndRepository(contributor,repository);
+        Optional<ContributorRepositoryEntity> contributorRepositoryEntity = contributorRepositoryRepository.findByContributorAndRepository(contributor, repository);
 
-       if(contributorRepositoryEntity.isEmpty()){
-           ContributorRepositoryEntity contributorRepositoryEntry = new ContributorRepositoryEntity(contributor, repository);
-           contributorRepositoryRepository.save(contributorRepositoryEntry);
-       }
+        if (contributorRepositoryEntity.isEmpty()) {
+            ContributorRepositoryEntity contributorRepositoryEntry = new ContributorRepositoryEntity(contributor, repository);
+            contributorRepositoryRepository.save(contributorRepositoryEntry);
+        }
 
     }
 
@@ -239,7 +252,6 @@ public class ContributorsService {
         repository.setId(repositoryId);
 
 
-
         // Find all associations for the repository
         Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByRepository(repository, pageable);
 
@@ -258,7 +270,6 @@ public class ContributorsService {
         contributor.setId(contributorId);
 
 
-
         // Find all associations for the repository
         Page<ContributorRepositoryEntity> associations = contributorRepositoryRepository.findByContributor(contributor, pageable);
 
@@ -270,9 +281,32 @@ public class ContributorsService {
         return new PageImpl<>(repositories, pageable, associations.getTotalElements());
     }
 
-    public Page<Contributor> findContributors( Pageable pageable) {
-        return contributorRepository.findAll(pageable);
+    public Map<String, Object> findContributors(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorsPage = contributorRepository.findAll(pageable);
+
+        return utils.constructPageResponse(contributorsPage);
     }
 
+    public Map<String, Object> retrieveContributorsForRepository(Long repoId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorsPage = findContributorsByRepository(repoId, pageable);
+
+        return utils.constructPageResponse(contributorsPage);
+    }
+
+    public Map<String,Object> findByGithubUsernameOrFullName(String username, String name, int page, int size){
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve repositories with pagination
+        Page<Contributor> contributorPage = contributorRepository.findByGithubUsernameOrFullName(username,name, pageable);
+
+
+        return utils.constructPageResponse(contributorPage);
+    }
 }

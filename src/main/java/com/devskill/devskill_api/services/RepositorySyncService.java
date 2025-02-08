@@ -3,29 +3,28 @@ package com.devskill.devskill_api.services;
 import com.devskill.devskill_api.models.Contribution;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.utils.Utils;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class RepositorySyncService {
 
     @Autowired
     private RepoService repoService;
-    @Autowired
-    private CommitService commitService;
 
     @Autowired
     private ContributorsService contributorsService;
@@ -39,6 +38,7 @@ public class RepositorySyncService {
     public Map<String, Object> syncRepositoryData(String repoName, int files, long megabyte, boolean isTrending) throws Exception {
 
         RepositoryEntity repository;
+        boolean isExisted = false;
         List<Contribution> Contribution;
 
         Map<String, Object> result = new HashMap<>();
@@ -50,10 +50,13 @@ public class RepositorySyncService {
             cloneRepository(repoName, repositoryPath);
             checkRepository(repositoryPath,files,megabyte);
 
-            repository = repoService.getRepoDetails(repositoryPath, isTrending);
-            Contribution = contributorsService.getContributions(repository, repositoryPath);
+            Map<String, Object> results = repoService.getRepoDetails(repositoryPath, isTrending);
 
-            // Create a map to store contributors and commits
+            repository = (RepositoryEntity) results.get("repository");
+            isExisted = (boolean) results.get("isExisted");
+
+            Contribution = contributorsService.getContributions(repository, repositoryPath, isExisted);
+
             result.put("contributors", Contribution);
 
             removeRepository(repositoryPath);
@@ -70,7 +73,6 @@ public class RepositorySyncService {
         }
 
     }
-
     private void checkRepository(Path repositoryPath, int files, long megabyte) throws Exception {
 
         int filesCount = utils.executeGitFileCount(repositoryPath);
@@ -82,7 +84,6 @@ public class RepositorySyncService {
             throw new Exception(STR."The files are \{filesCount} and the repo size is \{repoSize} mb. The repository have to has over \{files} files and has to be over \{megabyte} mb.");
         }
     }
-
     private void cloneRepository(String repoName, Path repositoryPath) throws Exception {
 
         String url;
@@ -106,7 +107,6 @@ public class RepositorySyncService {
         }
 
     }
-
     public List<String> readRepositoryNamesFromJson() throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -151,5 +151,63 @@ public class RepositorySyncService {
         } else {
             logger.info("Repository does not exist: {}", repositoryPath);
         }
+    }
+
+    public void executeSync(int files, long megabyte, List<String> repositories, boolean isTrending) throws Exception {
+
+        ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
+
+        AtomicBoolean trending = new AtomicBoolean(isTrending);
+
+        List<String> trendingRepositories;
+        if(!isTrending){
+            trendingRepositories =  repoService.getTrendingRepositories();
+        } else {
+            trendingRepositories = new ArrayList<>();
+        }
+
+        backgroundExecutor.submit(() -> {
+            try {
+                // Create a fixed thread pool with 5 threads for parallel processing
+                ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+                // Store results in a thread-safe map
+                Map<String, Object> results = new ConcurrentHashMap<>();
+
+                // Submit tasks for each repository
+                List<Future<?>> futures = new ArrayList<>();
+                for (String repo : repositories) {
+
+                    if (!trendingRepositories.isEmpty() && trendingRepositories.contains(repo)){
+                        trending.set(true);
+                    }
+
+                    futures.add(executorService.submit(() -> {
+                        try {
+                            // Process each repository and store results
+                            Map<String, Object> syncData = syncRepositoryData(repo, files, megabyte, trending.get());
+                            results.put(repo, syncData);
+                        } catch (Exception e) {
+                            results.put(repo, STR."Error: \{e.getMessage()}");
+                        }
+                    }));
+                }
+
+                // Wait for all tasks to complete
+                for (Future<?> future : futures) {
+                    future.get(); // Blocks until each task is finished
+                }
+
+                logger.info("Results: {}", results);
+
+                // Shutdown the executor service after completing all tasks
+                executorService.shutdown();
+
+            } catch (Exception e) {
+                logger.info(e.getMessage());
+            } finally {
+                backgroundExecutor.shutdown();
+            }
+        });
     }
 }

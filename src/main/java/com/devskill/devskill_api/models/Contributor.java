@@ -14,7 +14,6 @@ public class Contributor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     @Column(name = "github_username", nullable = false, unique = true)
     private String githubUsername;
 

@@ -16,13 +16,11 @@ import java.util.Optional;
 public interface ContributionRepository extends JpaRepository<Contribution, Long> {
     // Method to find a contribution by contributor and extension
     Optional<Contribution> findByContributorAndExtension(Contributor contributor, String extension);
-
     @Query("SELECT c.contributor, SUM(c.insertions) AS totalInsertions, SUM(c.deletions) AS totalDeletions " +
             "FROM Contribution c " +
             "WHERE c.extension = :language " +
             "GROUP BY c.contributor " +
             "ORDER BY totalInsertions DESC, totalDeletions DESC")
     Page<Contributor> findTopContributorsByLanguage(String language, Pageable pageable);
-
 }
 

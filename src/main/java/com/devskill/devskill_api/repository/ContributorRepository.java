@@ -9,10 +9,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ContributorRepository extends JpaRepository<Contributor, Long> {
     Contributor findByEmail(String email);
-
     Page<Contributor> findAll(Pageable pageable);
-
-   Page<Contributor> findByGithubUsernameOrFullName(String username, String name, Pageable pageable);
+    Page<Contributor>findByGithubUsernameOrFullName(String username, String name, Pageable pageable);
 
     Page<Contributor> findByFullName(String name, Pageable pageable);
 

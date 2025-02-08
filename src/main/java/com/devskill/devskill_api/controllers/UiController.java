@@ -1,19 +1,15 @@
 package com.devskill.devskill_api.controllers;
 
 import com.devskill.devskill_api.models.Contributor;
-import com.devskill.devskill_api.models.ContributorRepositoryEntity;
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.ContributorRepository;
-import com.devskill.devskill_api.repository.ContributorRepositoryRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
+import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.services.ContributorsService;
 import com.devskill.devskill_api.services.RepoService;
-import com.devskill.devskill_api.services.RepositorySyncService;
 import com.devskill.devskill_api.utils.Utils;
-import com.fasterxml.jackson.databind.deser.impl.CreatorCandidate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,19 +21,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 
-
 @RestController
-public class frontController {
+public class UiController {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
 
     @Autowired
-    private ContributorRepository contributorRepository;
+    private TrendingRepositoryRepository trendingRepositoryRepository;
+
+    @Autowired
+    private RepoService repoService;
 
     @Autowired
     private ContributorsService contributorsService;
@@ -45,24 +42,16 @@ public class frontController {
     @Autowired
     private ContributionRepository contributionRepository;
 
+    @Autowired
+    private Utils utils;
 
     @GetMapping("/retrieveRepositories")
     public ResponseEntity<?> retrieveRepositories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
 
-            // Retrieve repositories with pagination
-            Page<RepositoryEntity> repositoryPage = repositoryRepository.findAll(pageable);
-
-            // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("repositories", repositoryPage.getContent());
-            response.put("currentPage", repositoryPage.getNumber());
-            response.put("totalItems", repositoryPage.getTotalElements());
-            response.put("totalPages", repositoryPage.getTotalPages());
-            response.put("pageSize", repositoryPage.getSize());
+            Map<String, Object> response = repoService.retrieveRepositories(page,size);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -82,18 +71,7 @@ public class frontController {
                 throw new IllegalArgumentException("Repository id must be provided");
             }
 
-            Pageable pageable = PageRequest.of(page, size);
-
-            // Retrieve repositories with pagination
-            Page<Contributor> contributorsPage = contributorsService.findContributorsByRepository(repoId, pageable);
-
-            // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("contributors", contributorsPage.getContent());
-            response.put("currentPage", contributorsPage.getNumber());
-            response.put("totalItems", contributorsPage.getTotalElements());
-            response.put("totalPages", contributorsPage.getTotalPages());
-            response.put("pageSize", contributorsPage.getSize());
+            Map<String, Object> response = contributorsService.retrieveContributorsForRepository(repoId,page,size);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -107,18 +85,8 @@ public class frontController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
 
-            // Retrieve repositories with pagination
-            Page<Contributor> contributorsPage = contributorsService.findContributors(pageable);
-
-            // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("contributors", contributorsPage.getContent());
-            response.put("currentPage", contributorsPage.getNumber());
-            response.put("totalItems", contributorsPage.getTotalElements());
-            response.put("totalPages", contributorsPage.getTotalPages());
-            response.put("pageSize", contributorsPage.getSize());
+            Map<String, Object> response = contributorsService.findContributors(page,size);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -139,18 +107,7 @@ public class frontController {
                 throw new IllegalArgumentException("Either 'name' and 'url' must be provided");
             }
 
-            Pageable pageable = PageRequest.of(page, size);
-
-            // Retrieve repositories with pagination
-            Page<RepositoryEntity> repositoryPage = repositoryRepository.findByRepoNameOrRepoUrl(name,url, pageable);
-
-            // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("repositories", repositoryPage.getContent());
-            response.put("currentPage", repositoryPage.getNumber());
-            response.put("totalItems", repositoryPage.getTotalElements());
-            response.put("totalPages", repositoryPage.getTotalPages());
-            response.put("pageSize", repositoryPage.getSize());
+            Map<String, Object> response = repoService.findByRepoNameOrRepoUrl(name,url,page,size);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -176,12 +133,7 @@ public class frontController {
             Page<RepositoryEntity> repositoryPage = contributorsService.findRepositoriesByContributor(conId, pageable);
 
             // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("repositories", repositoryPage.getContent());
-            response.put("currentPage", repositoryPage.getNumber());
-            response.put("totalItems", repositoryPage.getTotalElements());
-            response.put("totalPages", repositoryPage.getTotalPages());
-            response.put("pageSize", repositoryPage.getSize());
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -202,18 +154,8 @@ public class frontController {
                 throw new IllegalArgumentException("Either 'name' and 'username' must be provided");
             }
 
-            Pageable pageable = PageRequest.of(page, size);
-
-            // Retrieve repositories with pagination
-            Page<Contributor> contributorPage = contributorRepository.findByGithubUsernameOrFullName(username,name, pageable);
-
             // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("contributors", contributorPage.getContent());
-            response.put("currentPage", contributorPage.getNumber());
-            response.put("totalItems", contributorPage.getTotalElements());
-            response.put("totalPages", contributorPage.getTotalPages());
-            response.put("pageSize", contributorPage.getSize());
+            Map<String, Object> response = contributorsService.findByGithubUsernameOrFullName(username,name,page,size);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -221,7 +163,6 @@ public class frontController {
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
         }
     }
-
 
     @GetMapping("/retrieveTrendingRepositories")
     public ResponseEntity<?> retrieveTrendingRepositories(
@@ -232,15 +173,10 @@ public class frontController {
             Pageable pageable = PageRequest.of(page, size);
 
             // Retrieve repositories with pagination
-            Page<RepositoryEntity> repositoryPage = repositoryRepository.findAllByTrending(true, pageable);
+            Page<TrendingRepository> trendingRepositoryPage = trendingRepositoryRepository.findAllByToday(LocalDateTime.now(), pageable);
 
             // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("repositories", repositoryPage.getContent());
-            response.put("currentPage", repositoryPage.getNumber());
-            response.put("totalItems", repositoryPage.getTotalElements());
-            response.put("totalPages", repositoryPage.getTotalPages());
-            response.put("pageSize", repositoryPage.getSize());
+            Map<String, Object> response = utils.constructPageResponse(trendingRepositoryPage);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -267,12 +203,7 @@ public class frontController {
             Page<Contributor> contributorsPage = contributionRepository.findTopContributorsByLanguage(language, pageable);
 
             // Customize the response to include metadata
-            Map<String, Object> response = new HashMap<>();
-            response.put("contributors", contributorsPage.getContent());
-            response.put("currentPage", contributorsPage.getNumber());
-            response.put("totalItems", contributorsPage.getTotalElements());
-            response.put("totalPages", contributorsPage.getTotalPages());
-            response.put("pageSize", contributorsPage.getSize());
+            Map<String, Object> response = utils.constructPageResponse(contributorsPage);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -280,7 +211,4 @@ public class frontController {
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
         }
     }
-
-
-
 }

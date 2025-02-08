@@ -1,6 +1,11 @@
 package com.devskill.devskill_api.utils;
 
+import com.devskill.devskill_api.models.Contributor;
+import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,6 +17,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class Utils {
@@ -138,7 +145,6 @@ public class Utils {
         }
     }
 
-
     public int executeGitFileCount(Path repositoryPath) throws IOException, InterruptedException {
 
         String command = "git -C " + repositoryPath.toString() + " ls-files";
@@ -216,6 +222,29 @@ public class Utils {
         return "noExtension";
     }
 
+    public Map<String, Object> constructPageResponse(Page<?> pageObject) {
 
+        Map<String, Object> response = new HashMap<>();
 
+        // Add a content-specific key based on the content type
+        if (!pageObject.getContent().isEmpty()) {
+            Object firstItem = pageObject.getContent().getFirst();
+            if (firstItem instanceof RepositoryEntity || firstItem instanceof TrendingRepository) {
+                response.put("repositories", pageObject.getContent());
+            } else if (firstItem instanceof Contributor) {
+                response.put("contributors", pageObject.getContent());
+            } else {
+                response.put("items", pageObject.getContent());
+            }
+        } else {
+            response.put("items", pageObject.getContent()); // Default for empty content
+        }
+
+        response.put("currentPage", pageObject.getNumber());
+        response.put("totalItems", pageObject.getTotalElements());
+        response.put("totalPages", pageObject.getTotalPages());
+        response.put("pageSize", pageObject.getSize());
+
+        return response;
+    }
 }

@@ -1,12 +1,17 @@
 package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
+import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,6 +31,9 @@ public class RepoService {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
+    @Autowired
+    private TrendingRepositoryRepository trendingRepositoryRepository;
+
 
     @Autowired
     private Utils utils;
@@ -128,7 +136,7 @@ public class RepoService {
         try {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(new File("output.json"), response);
         } catch (IOException e) {
-            throw new RuntimeException("Error saving JSON response: " + e.getMessage());
+            throw new RuntimeException(STR."Error saving JSON response: \{e.getMessage()}");
         }
 
         return response;
@@ -175,9 +183,13 @@ public class RepoService {
                 ));
     }
 
-    public RepositoryEntity getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
+    public Map<String, Object> getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
 
        String repoUrl = retrieveRepoUrl(repositoryPath);
+
+       boolean isExisted = false;
+
+        Map<String, Object> results = new HashMap<>();
 
        if(repoUrl.isEmpty()){
          throw new Exception("The url is empty");
@@ -190,12 +202,19 @@ public class RepoService {
         Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(extractedRepoName, repoUrl);
 
         if (existingRepo.isPresent()) {
+            isExisted =  true;
           RepositoryEntity  repo = existingRepo.get();
           repo.setLast_commit_date(lastCommitDate);
           List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
           repo.setExtensions(extensions);
           repositoryRepository.save(repo);
-          return repo;
+            if(isTrending){
+                TrendingRepository trendingRepository = new TrendingRepository(repo);
+                trendingRepositoryRepository.save(trendingRepository);
+            }
+            results.put("repository", repo);
+            results.put("isExisted", isExisted);
+          return results;
         }
 
         LocalDate creationDate = retrieveCreationDate(repositoryPath);
@@ -203,10 +222,19 @@ public class RepoService {
         List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
 
         // Create and save a new RepositoryEntity with the relevant details
-        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions, isTrending);
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions);
 
-        // Save the repository entity and return it
-        return repositoryRepository.save(repositoryEntity);
+        RepositoryEntity persistedRepository = repositoryRepository.save(repositoryEntity);
+
+        if(isTrending){
+            TrendingRepository trendingRepository = new TrendingRepository(repositoryEntity);
+            trendingRepositoryRepository.save(trendingRepository);
+        }
+
+        results.put("repository", persistedRepository);
+        results.put("isExisted", isExisted);
+
+        return results;
     }
 
     private String retrieveRepoUrl(Path repositoryPath) throws IOException, InterruptedException {
@@ -229,7 +257,7 @@ public class RepoService {
         // Wait for the process to finish
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new IOException("Error occurred while executing git command, exit code: " + exitCode);
+            throw new IOException(STR."Error occurred while executing git command, exit code: \{exitCode}");
         }
 
         return repoUrl;
@@ -304,6 +332,27 @@ public class RepoService {
             }
         }
 
+        public Map<String, Object> retrieveRepositories(int page, int size){
 
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Retrieve repositories with pagination
+            Page<RepositoryEntity> repositoryPage = repositoryRepository.findAll(pageable);
+
+            // Customize the response to include metadata
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+
+            return response;
+        }
+
+        public Map<String,Object> findByRepoNameOrRepoUrl(String name, String url, int page, int size){
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            Page<RepositoryEntity> repositoryPage = repositoryRepository.findByRepoNameOrRepoUrl(name,url, pageable);
+
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+
+            return response;
+        }
 }
-

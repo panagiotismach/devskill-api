@@ -83,7 +83,6 @@ public class Contribution {
                 Objects.equals(contributor, that.contributor) &&
                 Objects.equals(extension, that.extension);
     }
-
     @Override
     public int hashCode() {
         return Objects.hash(id, contributor, extension);
