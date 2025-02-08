@@ -3,20 +3,16 @@ package com.devskill.devskill_api.services;
 import com.devskill.devskill_api.models.Contribution;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.utils.Utils;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +25,7 @@ public class RepositorySyncService {
 
     @Autowired
     private RepoService repoService;
-    
+
     @Autowired
     private ContributorsService contributorsService;
 
@@ -42,6 +38,7 @@ public class RepositorySyncService {
     public Map<String, Object> syncRepositoryData(String repoName, int files, long megabyte, boolean isTrending) throws Exception {
 
         RepositoryEntity repository;
+        boolean isExisted = false;
         List<Contribution> Contribution;
 
         Map<String, Object> result = new HashMap<>();
@@ -53,10 +50,13 @@ public class RepositorySyncService {
             cloneRepository(repoName, repositoryPath);
             checkRepository(repositoryPath,files,megabyte);
 
-            repository = repoService.getRepoDetails(repositoryPath, isTrending);
-            Contribution = contributorsService.getContributions(repository, repositoryPath);
+            Map<String, Object> results = repoService.getRepoDetails(repositoryPath, isTrending);
 
-            // Create a map to store contributors and commits
+            repository = (RepositoryEntity) results.get("repository");
+            isExisted = (boolean) results.get("isExisted");
+
+            Contribution = contributorsService.getContributions(repository, repositoryPath, isExisted);
+
             result.put("contributors", Contribution);
 
             removeRepository(repositoryPath);

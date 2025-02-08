@@ -2,9 +2,11 @@ package com.devskill.devskill_api.controllers;
 
 import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.ContributorRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
+import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.services.ContributorsService;
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.utils.Utils;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -25,6 +29,9 @@ public class UiController {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
+
+    @Autowired
+    private TrendingRepositoryRepository trendingRepositoryRepository;
 
     @Autowired
     private RepoService repoService;
@@ -37,7 +44,6 @@ public class UiController {
 
     @Autowired
     private Utils utils;
-
 
     @GetMapping("/retrieveRepositories")
     public ResponseEntity<?> retrieveRepositories(
@@ -148,7 +154,6 @@ public class UiController {
                 throw new IllegalArgumentException("Either 'name' and 'username' must be provided");
             }
 
-
             // Customize the response to include metadata
             Map<String, Object> response = contributorsService.findByGithubUsernameOrFullName(username,name,page,size);
 
@@ -159,7 +164,6 @@ public class UiController {
         }
     }
 
-
     @GetMapping("/retrieveTrendingRepositories")
     public ResponseEntity<?> retrieveTrendingRepositories(
             @RequestParam(defaultValue = "0") int page,
@@ -169,10 +173,10 @@ public class UiController {
             Pageable pageable = PageRequest.of(page, size);
 
             // Retrieve repositories with pagination
-            Page<RepositoryEntity> repositoryPage = repositoryRepository.findAllByTrending(true, pageable);
+            Page<TrendingRepository> trendingRepositoryPage = trendingRepositoryRepository.findAllByToday(LocalDateTime.now(), pageable);
 
             // Customize the response to include metadata
-            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+            Map<String, Object> response = utils.constructPageResponse(trendingRepositoryPage);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -207,6 +211,4 @@ public class UiController {
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
         }
     }
-
-
 }

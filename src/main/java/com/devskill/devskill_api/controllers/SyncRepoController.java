@@ -2,6 +2,7 @@ package com.devskill.devskill_api.controllers;
 
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.services.RepositorySyncService;
+import com.devskill.devskill_api.utils.General;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,10 @@ public class SyncRepoController {
     @GetMapping("/syncRepo")
     public ResponseEntity<?> syncRepo(@RequestParam String repoName) {
         try {
-            Map<String, Object> syncData =  repositorySyncService.syncRepositoryData(repoName, 1000, 300, false);
+            List<String> trendingRepositories =  repoService.getTrendingRepositories();
+           boolean isTrending = trendingRepositories.stream().anyMatch(trendingRepo -> trendingRepo.equalsIgnoreCase(repoName));
+
+            Map<String, Object> syncData =  repositorySyncService.syncRepositoryData(repoName, General.FILES.getValue(), General.MB.getValue(), isTrending);
             return ResponseEntity.ok(syncData); // Return 200 OK with the syncData
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -40,7 +44,6 @@ public class SyncRepoController {
         return "The process of syncing the repositories data has been started.";
     }
 
-
     @GetMapping("/syncTrendingRepositories")
     public String syncTrendingRepositories(@RequestParam(defaultValue = "1") int files, @RequestParam(defaultValue = "1") long megabyte) throws Exception {
 
@@ -48,6 +51,5 @@ public class SyncRepoController {
         repositorySyncService.executeSync(files,megabyte, trendingRepositories, true);
 
         return "The process of syncing the trending repositories data has been started.";
-
     }
 }

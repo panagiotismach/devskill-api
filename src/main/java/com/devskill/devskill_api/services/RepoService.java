@@ -1,7 +1,9 @@
 package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
+import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +31,9 @@ public class RepoService {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
+    @Autowired
+    private TrendingRepositoryRepository trendingRepositoryRepository;
+
 
     @Autowired
     private Utils utils;
@@ -178,9 +183,13 @@ public class RepoService {
                 ));
     }
 
-    public RepositoryEntity getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
+    public Map<String, Object> getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
 
        String repoUrl = retrieveRepoUrl(repositoryPath);
+
+       boolean isExisted = false;
+
+        Map<String, Object> results = new HashMap<>();
 
        if(repoUrl.isEmpty()){
          throw new Exception("The url is empty");
@@ -193,12 +202,19 @@ public class RepoService {
         Optional<RepositoryEntity> existingRepo = repositoryRepository.findByRepoNameIgnoreCaseAndRepoUrlIgnoreCase(extractedRepoName, repoUrl);
 
         if (existingRepo.isPresent()) {
+            isExisted =  true;
           RepositoryEntity  repo = existingRepo.get();
           repo.setLast_commit_date(lastCommitDate);
           List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
           repo.setExtensions(extensions);
           repositoryRepository.save(repo);
-          return repo;
+            if(isTrending){
+                TrendingRepository trendingRepository = new TrendingRepository(repo);
+                trendingRepositoryRepository.save(trendingRepository);
+            }
+            results.put("repository", repo);
+            results.put("isExisted", isExisted);
+          return results;
         }
 
         LocalDate creationDate = retrieveCreationDate(repositoryPath);
@@ -206,10 +222,19 @@ public class RepoService {
         List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
 
         // Create and save a new RepositoryEntity with the relevant details
-        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions, isTrending);
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions);
 
-        // Save the repository entity and return it
-        return repositoryRepository.save(repositoryEntity);
+        RepositoryEntity persistedRepository = repositoryRepository.save(repositoryEntity);
+
+        if(isTrending){
+            TrendingRepository trendingRepository = new TrendingRepository(repositoryEntity);
+            trendingRepositoryRepository.save(trendingRepository);
+        }
+
+        results.put("repository", persistedRepository);
+        results.put("isExisted", isExisted);
+
+        return results;
     }
 
     private String retrieveRepoUrl(Path repositoryPath) throws IOException, InterruptedException {

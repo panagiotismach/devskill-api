@@ -134,11 +134,25 @@ public class ContributorsService {
         return changedFiles;
     }
 
-    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath) throws Exception {
+    public List<Contribution> getContributions(RepositoryEntity repository, Path repositoryPath, boolean isExisted) throws Exception {
+
+        List<String> command = new ArrayList<>();
+        command.add("git");
+        command.add("-C");
+        command.add(repositoryPath.toString());
+        command.add("log");
+        command.add("--pretty=format:%H - %an - %ae");
+        command.add("--numstat");
+        command.add("--date=short");
+
+        // Add --since option conditionally
+        if (isExisted) {
+            command.add(STR."--since=\{repository.getLast_commit_date()}");
+        }
+
 
         // Git command to get commit history
-        ProcessBuilder processBuilder = new ProcessBuilder("git", "-C", repositoryPath.toString(),
-                "log", "--pretty=format:%H - %an - %ae", "--numstat", "--date=short");
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
 
         Process process = processBuilder.start();

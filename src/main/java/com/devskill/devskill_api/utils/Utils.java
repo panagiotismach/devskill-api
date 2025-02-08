@@ -2,6 +2,7 @@ package com.devskill.devskill_api.utils;
 
 import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.models.TrendingRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
@@ -228,7 +229,7 @@ public class Utils {
         // Add a content-specific key based on the content type
         if (!pageObject.getContent().isEmpty()) {
             Object firstItem = pageObject.getContent().getFirst();
-            if (firstItem instanceof RepositoryEntity) {
+            if (firstItem instanceof RepositoryEntity || firstItem instanceof TrendingRepository) {
                 response.put("repositories", pageObject.getContent());
             } else if (firstItem instanceof Contributor) {
                 response.put("contributors", pageObject.getContent());

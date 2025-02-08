@@ -55,7 +55,7 @@ public class GitHubArchiveController {
     public ResponseEntity<?> getRepoDetails(@RequestParam String repoName) {
         try {
             Path repositoryPath = utils.getPathOfRepository(repoName);
-            RepositoryEntity repository = repoService.getRepoDetails(repositoryPath,false);
+            RepositoryEntity repository = (RepositoryEntity) repoService.getRepoDetails(repositoryPath,false).get("repository");
             return ResponseEntity.ok(repository); // Return 200 OK with the repo details
         } catch (Exception e) {
             return ResponseEntity.status(500).body(STR."Internal Server Error: \{e.getMessage()}"); // Return 500 Internal Server Error
@@ -74,5 +74,4 @@ public class GitHubArchiveController {
                     .body("Internal Server Error: " + e.getMessage()); // Return 500 Internal Server Error
         }
     }
-
 }
