@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +41,7 @@ public class RepositorySyncService {
         RepositoryEntity repository;
         boolean isExisted = false;
         List<Contribution> Contribution;
+        LocalDate preLastCommitDate = null;
 
         Map<String, Object> result = new HashMap<>();
         Path repositoryPath = null;
@@ -54,8 +56,11 @@ public class RepositorySyncService {
 
             repository = (RepositoryEntity) results.get("repository");
             isExisted = (boolean) results.get("isExisted");
+            if(isExisted){
+                preLastCommitDate = (LocalDate) results.get("preLastCommitDate");
+            }
 
-            Contribution = contributorsService.getContributions(repository, repositoryPath, isExisted);
+            Contribution = contributorsService.getContributions(repository, repositoryPath, isExisted, preLastCommitDate);
 
             result.put("contributors", Contribution);
 

@@ -204,6 +204,7 @@ public class RepoService {
         if (existingRepo.isPresent()) {
             isExisted =  true;
           RepositoryEntity  repo = existingRepo.get();
+          LocalDate preLastCommitDate = repo.getLast_commit_date();
           repo.setLast_commit_date(lastCommitDate);
           List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
           repo.setExtensions(extensions);
@@ -214,6 +215,7 @@ public class RepoService {
             }
             results.put("repository", repo);
             results.put("isExisted", isExisted);
+            results.put("preLastCommitDate", preLastCommitDate);
           return results;
         }
 
