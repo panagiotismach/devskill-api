@@ -1,27 +1,35 @@
-# Step 1: Build the Spring Boot app using Maven
-FROM maven:3.8.6-openjdk-17-slim AS build
+# Use an official OpenJDK runtime as the base image
+FROM openjdk:22-jdk-slim as builder
 
-# Set the working directory for Maven
+# Install Maven in the builder image
+RUN apt-get update && apt-get install -y maven
+
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the pom.xml and the src folder to the container
+# Copy the pom.xml and download the dependencies
 COPY pom.xml .
+
+# Install dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy the source code into the container
 COPY src ./src
 
-# Build the application (creates the .jar file)
+# Package the application
 RUN mvn clean package -DskipTests
 
-# Step 2: Create a minimal image to run the application
-FROM openjdk:17-jdk-slim
+# Second stage to reduce the size of the image
+FROM openjdk:22-jdk-slim
 
-# Set the working directory for the application
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the JAR file from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the packaged JAR file from the builder stage
+COPY --from=builder /app/target/devskill-api-0.0.1-SNAPSHOT.jar /app/devskill-api.jar
 
-# Expose the port the application will run on
+# Expose the port the app will run on (default Spring Boot port is 8080)
 EXPOSE 8080
 
-# Run the Spring Boot application
-CMD ["java", "-jar", "app.jar"]
+# Run the application
+ENTRYPOINT ["java", "--enable-preview", "-jar", "/app/devskill-api.jar"]
