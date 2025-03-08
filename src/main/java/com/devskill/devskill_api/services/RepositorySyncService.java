@@ -50,7 +50,7 @@ public class RepositorySyncService {
             repositoryPath = utils.getPath(repoName);
 
             cloneRepository(repoName, repositoryPath);
-            checkRepository(repositoryPath,files,megabyte);
+            checkRepository(repositoryPath,files,megabyte, isTrending);
 
             Map<String, Object> results = repoService.getRepoDetails(repositoryPath, isTrending);
 
@@ -78,14 +78,14 @@ public class RepositorySyncService {
         }
 
     }
-    private void checkRepository(Path repositoryPath, int files, long megabyte) throws Exception {
+    private void checkRepository(Path repositoryPath, int files, long megabyte, boolean isTrending) throws Exception {
 
         int filesCount = utils.executeGitFileCount(repositoryPath);
 
         long repoSize = utils.getGitRepoSizeInMB(repositoryPath);
 
 
-        if(filesCount < files || repoSize < megabyte){
+        if((filesCount < files || repoSize < megabyte) && !isTrending){
             throw new Exception(STR."The files are \{filesCount} and the repo size is \{repoSize} mb. The repository have to has over \{files} files and has to be over \{megabyte} mb.");
         }
     }
@@ -117,7 +117,7 @@ public class RepositorySyncService {
         ObjectMapper objectMapper = new ObjectMapper();
 
 
-        Path jsonFilePath = utils.getPathOfRepositories("output-1-2015.json");
+        Path jsonFilePath = utils.getPathOfRepositories("t.json");
 
 
         JsonNode rootNode = objectMapper.readTree(jsonFilePath.toFile());
@@ -183,19 +183,23 @@ public class RepositorySyncService {
                 List<Future<?>> futures = new ArrayList<>();
                 for (String repo : repositories) {
 
-                    if (!trendingRepositories.isEmpty() && trendingRepositories.contains(repo)){
-                        trending.set(true);
-                    }
 
                     futures.add(executorService.submit(() -> {
                         try {
+                            if (!trendingRepositories.isEmpty() && trendingRepositories.contains(repo)){
+                                trending.set(true);
+                            }
                             // Process each repository and store results
                             Map<String, Object> syncData = syncRepositoryData(repo, files, megabyte, trending.get());
+                            if (!trendingRepositories.isEmpty()){
+                                trending.set(false);
+                            }
                             results.put(repo, syncData);
                         } catch (Exception e) {
                             results.put(repo, STR."Error: \{e.getMessage()}");
                         }
                     }));
+
                 }
 
                 // Wait for all tasks to complete

@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ContributorsService {
@@ -311,5 +312,23 @@ public class ContributorsService {
 
 
         return utils.constructPageResponse(contributorPage);
+    }
+
+    public List<Object[]> findTopContributors(){
+        return contributionRepository.findTopContributors();
+    }
+
+    public List<Object[]> findContributionsPerContributor(Long contributorId) {
+        List<Object[]> contributions = contributionRepository.findContributionsByContributor(contributorId);
+
+        // Add "total changes" (insertions + deletions) dynamically
+        return contributions.stream()
+                .map(record -> new Object[]{
+                        record[0],  // extension
+                        record[1],  // insertions
+                        record[2],  // deletions
+                        ((Long) record[1]) + ((Long) record[2]) // total changes
+                })
+                .collect(Collectors.toList());
     }
 }

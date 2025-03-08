@@ -2,6 +2,7 @@ package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
+import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.utils.Utils;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -21,7 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class RepoService {
@@ -31,9 +35,12 @@ public class RepoService {
 
     @Autowired
     private RepositoryRepository repositoryRepository;
+
     @Autowired
     private TrendingRepositoryRepository trendingRepositoryRepository;
 
+    @Autowired
+    private ContributionRepository contributionRepository;
 
     @Autowired
     private Utils utils;
@@ -357,4 +364,36 @@ public class RepoService {
 
             return response;
         }
+
+    public Page<RepositoryEntity> getRepositoriesWithInsertionsAndDeletionsByLanguage(String languageExtension, Pageable pageable) {
+        return contributionRepository.findRepositoriesWithInsertionsAndDeletionsByLanguage(languageExtension, pageable);
+    }
+
+
+
+    public List<Map.Entry<String, Long>> findTop5MostUsedExtensions(Set<String> allowedExtensions) {
+        List<RepositoryEntity> repositories = repositoryRepository.findAll(); // Fetch all repositories
+
+        // Flatten extensions list and count occurrences
+        Stream<String> extensionsStream = repositories.stream()
+                .flatMap(repo -> repo.getExtensions().stream()); // Flatten the list of extensions
+
+        // Apply the filter only if allowedExtensions is not null
+        if (allowedExtensions != null) {
+            extensionsStream = extensionsStream.filter(allowedExtensions::contains); // Filter extensions if provided
+        }
+
+        // Count occurrences
+        Map<String, Long> extensionCount = extensionsStream
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        // Sort by count descending and take top 5
+        return extensionCount.entrySet().stream()
+                .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue())) // Sort descending
+                .limit(5) // Get top 5 extensions
+                .toList();
+    }
+
+
+
 }
