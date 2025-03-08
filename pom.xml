@@ -93,6 +93,18 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<source>22</source> <!-- Make sure this is set to 22 -->
+					<target>22</target> <!-- Make sure this is set to 22 -->
+					<compilerArgs>
+						<arg>--enable-preview</arg> <!-- Enable preview feature for compilation -->
+					</compilerArgs>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
