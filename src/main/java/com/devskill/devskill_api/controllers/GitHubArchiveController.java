@@ -36,7 +36,7 @@ public class GitHubArchiveController {
     }
 
     @GetMapping("/getContributorsByRepoName")
-    public ResponseEntity<?> getContributorsByRepoName(String repoName) {
+    public ResponseEntity<?> getContributorsByRepoName(@RequestParam String repoName) {
         try{
             List<Contributor> contributors = contributorService.getContributors(repoName);
 
@@ -47,7 +47,7 @@ public class GitHubArchiveController {
     }
 
     @GetMapping("/getChangedFilesForContributor")
-    public List<String> getChangedFilesForContributor(String repoName, String name, String email) throws Exception {
+    public List<String> getChangedFilesForContributor(@RequestParam String repoName,@RequestParam String name,@RequestParam String email) throws Exception {
         return contributorService.getChangedFilesForContributor(repoName,name,email);
     }
 

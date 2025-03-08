@@ -4,8 +4,6 @@ import com.devskill.devskill_api.models.Contributor;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
-import com.devskill.devskill_api.repository.ContributorRepository;
-import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.services.ContributorsService;
 import com.devskill.devskill_api.services.RepoService;
@@ -16,19 +14,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 public class UiController {
-
-    @Autowired
-    private RepositoryRepository repositoryRepository;
 
     @Autowired
     private TrendingRepositoryRepository trendingRepositoryRepository;
@@ -173,10 +167,12 @@ public class UiController {
             Pageable pageable = PageRequest.of(page, size);
 
             // Retrieve repositories with pagination
-            Page<TrendingRepository> trendingRepositoryPage = trendingRepositoryRepository.findAllByToday(LocalDateTime.now(), pageable);
+            Page<TrendingRepository> trendingRepositoryPage = trendingRepositoryRepository.findAll(pageable);
+
+           Page<RepositoryEntity> trendingRepositories = trendingRepositoryPage.map(TrendingRepository::getRepository);
 
             // Customize the response to include metadata
-            Map<String, Object> response = utils.constructPageResponse(trendingRepositoryPage);
+            Map<String, Object> response = utils.constructPageResponse(trendingRepositories);
 
             return ResponseEntity.ok(response); // Return 200 OK with the paginated results
         } catch (Exception e) {
@@ -185,7 +181,7 @@ public class UiController {
         }
     }
 
-    @GetMapping("/retrieveFilteredContributors")
+    @PostMapping("/retrieveFilteredContributors")
     public ResponseEntity<?> retrieveFilteredContributors(
             @RequestBody Map<String, Object> requestBody,
             @RequestParam(defaultValue = "0") int page,
@@ -211,4 +207,74 @@ public class UiController {
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
         }
     }
+
+    @PostMapping("/retrieveFilteredRepositories")
+    public ResponseEntity<?> retrieveFilteredRepositories(
+            @RequestBody Map<String, Object> requestBody,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            String language = (String) requestBody.get("language");
+
+            if(language == null){
+                throw new IllegalArgumentException("Language must be provided");
+            }
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            // Retrieve repositories with pagination
+            Page<RepositoryEntity> repositoryPage = repoService.getRepositoriesWithInsertionsAndDeletionsByLanguage(language, pageable);
+
+            // Customize the response to include metadata
+            Map<String, Object> response = utils.constructPageResponse(repositoryPage);
+
+            return ResponseEntity.ok(response); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/findTop5MostUsedExtensions")
+    public ResponseEntity<?> findTop5MostUsedExtensions( @RequestParam(required = false) Set<String> extensions) {
+        try {
+
+
+            List<Map.Entry<String, Long>> e = repoService.findTop5MostUsedExtensions(extensions);
+
+            return ResponseEntity.ok(e); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/findTopContributors")
+    public ResponseEntity<?> findTopContributors() {
+        try {
+
+
+            List<Object[]> contributors = contributorsService.findTopContributors();
+
+            return ResponseEntity.ok(contributors); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/findContributionsPerContributor")
+    public ResponseEntity<?> findContributionsPerContributor(@RequestParam Long conId) {
+        try {
+
+            List<Object[]> contributions = contributorsService.findContributionsPerContributor(conId);
+
+            return ResponseEntity.ok(contributions); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
+
 }
