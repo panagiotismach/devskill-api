@@ -5,6 +5,7 @@ import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
+import com.devskill.devskill_api.utils.General;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +47,7 @@ public class RepoService {
     private Utils utils;
 
     public Map<String, Object> getRepositories(String name) {
-        Path filePath = Paths.get("files", name);  // 'files' is the folder name
+        Path filePath = Paths.get(General.FILES_FOLDER.getText(), name);  // 'files' is the folder name
 
         Set<String> uniqueRepoNames = new HashSet<>();
         int lineCount = 0;
@@ -90,7 +91,7 @@ public class RepoService {
     }
 
     public Map<String, Object> processFiles() {
-        Path folderPath = Paths.get("files");
+        Path folderPath = Paths.get(General.FILES_FOLDER.getText());
         Set<String> uniqueRepoNames = new TreeSet<>();
         int totalLineCount = 0;
         int totalRepoCount = 0;
@@ -320,7 +321,7 @@ public class RepoService {
 
         public List<String> getTrendingRepositories() throws Exception {
             try {
-                String url = "https://github.com/trending";
+                String url = General.GITHUB_TRENDING.getText();
 
                 Document document = Jsoup.connect(url).get();
 

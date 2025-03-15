@@ -8,8 +8,6 @@ import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.ContributorRepository;
 import com.devskill.devskill_api.repository.ContributorRepositoryRepository;
 import com.devskill.devskill_api.utils.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

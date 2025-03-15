@@ -2,6 +2,7 @@ package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.Contribution;
 import com.devskill.devskill_api.models.RepositoryEntity;
+import com.devskill.devskill_api.utils.General;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,7 +94,7 @@ public class RepositorySyncService {
 
         String url;
 
-        if(repoName.startsWith("https://github.com/")){
+        if(repoName.startsWith(General.GITHUB.getText())){
             url = repoName;
         }else {
             url = STR."https://github.com/\{repoName}";

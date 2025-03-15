@@ -3,7 +3,6 @@ package com.devskill.devskill_api.models;
 import com.devskill.devskill_api.utils.ListToJsonConverter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-
 import java.time.LocalDate;
 import java.util.*;
 

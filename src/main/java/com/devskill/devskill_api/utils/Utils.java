@@ -40,7 +40,7 @@ public class Utils {
     public Path getPathOfRepositories(String name){
 
         // Path to the repositories folder
-        Path outputDir = Path.of("output");
+        Path outputDir = Path.of(General.OUTPUT_FOLDER.getText());
 
         // Check if the 'output' directory exists
         if (!Files.exists(outputDir) || !Files.isDirectory(outputDir)) {
@@ -63,7 +63,7 @@ public class Utils {
         String name;
         Path repositoryPath;
 
-        if (repoName.startsWith("https://github.com/")) {
+        if (repoName.startsWith(General.GITHUB.getText())) {
             name = extractRepoNameFromUrl(repoName);
         } else {
             name = repoName;
@@ -72,7 +72,7 @@ public class Utils {
         // Replace all '/' with '-' in the repoName
         name = name.replace("/", "-");
 
-        repositoryPath = Path.of("repos", name);
+        repositoryPath = Path.of(General.REPOS_FOLDER.getText(), name);
 
         return repositoryPath;
     }
