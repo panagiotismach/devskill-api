@@ -1,8 +1,6 @@
 package com.devskill.devskill_api.models;
 
 import jakarta.persistence.*;
-import org.springframework.data.domain.Page;
-
 import java.time.LocalDateTime;
 
 @Entity

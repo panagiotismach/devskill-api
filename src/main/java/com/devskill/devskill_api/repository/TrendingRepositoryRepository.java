@@ -14,9 +14,7 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface TrendingRepositoryRepository extends JpaRepository<TrendingRepository, Long> {
-
     @Query("SELECT t FROM TrendingRepository t WHERE DATE(t.createdAt) = DATE(:date)")
     Page<TrendingRepository> findAllByToday(@Param("date") LocalDateTime date, Pageable pageable);
-
 }
 
