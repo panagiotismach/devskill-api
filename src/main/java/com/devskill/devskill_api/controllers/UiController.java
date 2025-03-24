@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public class UiController {
@@ -241,6 +242,22 @@ public class UiController {
             List<Map.Entry<String, Long>> e = repoService.findTop5MostUsedExtensions(extensions);
 
             return ResponseEntity.ok(e); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
+    @GetMapping("/findAllExtensions")
+    public ResponseEntity<?> findAllExtensions( @RequestParam(required = false) Set<String> extensions) {
+        try {
+
+
+            List<Map.Entry<String, Long>> e = repoService.findAllExtensions(extensions, null);
+
+            return ResponseEntity.ok(e.stream()
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList())); 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error

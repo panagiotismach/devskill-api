@@ -370,9 +370,7 @@ public class RepoService {
         return contributionRepository.findRepositoriesWithInsertionsAndDeletionsByLanguage(languageExtension, pageable);
     }
 
-
-
-    public List<Map.Entry<String, Long>> findTop5MostUsedExtensions(Set<String> allowedExtensions) {
+    public List<Map.Entry<String, Long>> findAllExtensions(Set<String> allowedExtensions,Integer limit) {
         List<RepositoryEntity> repositories = repositoryRepository.findAll(); // Fetch all repositories
 
         // Flatten extensions list and count occurrences
@@ -389,10 +387,14 @@ public class RepoService {
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         // Sort by count descending and take top 5
-        return extensionCount.entrySet().stream()
-                .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue())) // Sort descending
-                .limit(5) // Get top 5 extensions
-                .toList();
+        Stream<Map.Entry<String, Long>> sortedStream = extensionCount.entrySet().stream()
+            .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()));
+
+        return (limit != null) ? sortedStream.limit(limit).toList() : sortedStream.toList();
+    }
+
+    public List<Map.Entry<String, Long>> findTop5MostUsedExtensions(Set<String> allowedExtensions) {
+       return this.findAllExtensions(allowedExtensions, 5);
     }
 
 
