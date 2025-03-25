@@ -6,6 +6,8 @@ import com.devskill.devskill_api.models.RepositoryEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -18,4 +20,9 @@ public interface ContributorRepositoryRepository extends JpaRepository<Contribut
     Page<ContributorRepositoryEntity> findByContributor(Contributor contributor, Pageable pageable);
     // Check if a specific contributor-repository association exists
     Optional<ContributorRepositoryEntity> findByContributorAndRepository(Contributor contributor, RepositoryEntity repository);
+
+    @Query("SELECT cr.repository, COUNT(cr.contributor) FROM ContributorRepositoryEntity cr " +
+            "GROUP BY cr.repository " +
+            "ORDER BY COUNT(cr.contributor) DESC")
+    List<Object[]> findTopRepositories(Pageable pageable);
 }

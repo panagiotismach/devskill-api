@@ -3,6 +3,7 @@ package com.devskill.devskill_api.services;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
+import com.devskill.devskill_api.repository.ContributorRepositoryRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
 import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.utils.General;
@@ -42,6 +43,9 @@ public class RepoService {
 
     @Autowired
     private ContributionRepository contributionRepository;
+
+    @Autowired
+    private ContributorRepositoryRepository contributorRepositoryRepository;
 
     @Autowired
     private Utils utils;
@@ -395,6 +399,10 @@ public class RepoService {
 
     public List<Map.Entry<String, Long>> findTop5MostUsedExtensions(Set<String> allowedExtensions) {
        return this.findAllExtensions(allowedExtensions, 5);
+    }
+
+    public List<Object[]> findTopRepositories(int pageSize) {
+        return contributorRepositoryRepository.findTopRepositories(PageRequest.of(0, pageSize));
     }
 
 

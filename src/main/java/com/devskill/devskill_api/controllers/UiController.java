@@ -278,6 +278,19 @@ public class UiController {
         }
     }
 
+    @GetMapping("/findTop5RepositoriesBasedOnContributors")
+    public ResponseEntity<?> findTopRepositoriesBasedOnContributors() {
+        try {
+
+            List<Object[]> repositories = repoService.findTopRepositories(5);
+
+            return ResponseEntity.ok(repositories); // Return 200 OK with the paginated results
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
+        }
+    }
+
     @GetMapping("/findContributionsPerContributor")
     public ResponseEntity<?> findContributionsPerContributor(@RequestParam Long conId) {
         try {
