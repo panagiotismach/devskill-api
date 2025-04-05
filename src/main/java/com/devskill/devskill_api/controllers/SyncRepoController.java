@@ -1,5 +1,6 @@
 package com.devskill.devskill_api.controllers;
 
+import com.devskill.devskill_api.services.ExtensionAggregationService;
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.services.RepositorySyncService;
 import com.devskill.devskill_api.utils.General;
@@ -20,6 +21,9 @@ public class SyncRepoController {
 
     @Autowired
     private RepoService repoService;
+
+    @Autowired
+    private ExtensionAggregationService aggregationService;
 
     @GetMapping("/syncRepo")
     public ResponseEntity<?> syncRepo(@RequestParam String repoName) {
@@ -51,5 +55,11 @@ public class SyncRepoController {
         repositorySyncService.executeSync(files,megabyte, trendingRepositories, true);
 
         return "The process of syncing the trending repositories data has been started.";
+    }
+
+    @GetMapping("/aggregate-extensions")
+    public ResponseEntity<String> aggregateExtensions() {
+        aggregationService.updateExtensionSummary();
+        return ResponseEntity.ok("Extension summary updated");
     }
 }

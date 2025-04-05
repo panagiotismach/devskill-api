@@ -1,11 +1,13 @@
 package com.devskill.devskill_api.controllers;
 
 import com.devskill.devskill_api.models.Contributor;
+import com.devskill.devskill_api.models.ExtensionDTO;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
 import com.devskill.devskill_api.services.ContributorsService;
+import com.devskill.devskill_api.services.ExtensionService;
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,10 @@ public class UiController {
 
     @Autowired
     private ContributionRepository contributionRepository;
+
+    @Autowired
+    private ExtensionService extensionService;
+
 
     @Autowired
     private Utils utils;
@@ -303,6 +309,25 @@ public class UiController {
                     .body(String.format("Internal Server Error: %s", e.getMessage())); // Return 500 Internal Server Error
         }
     }
+
+    @GetMapping("/retrieveExtensions")
+    public ResponseEntity<?> getExtensions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(extensionService.getExtensions(pageable));
+    }
+
+    @PostMapping("/retrieveFilteredExtensions")
+    public ResponseEntity<?> getFilteredExtensions(
+            @RequestBody Map<String, String> request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        String extensionName = request.get("extension");
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(extensionService.getFilteredExtensions(extensionName, pageable));
+    }
+
 
 
 }

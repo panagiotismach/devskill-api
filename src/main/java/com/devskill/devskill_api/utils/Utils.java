@@ -1,8 +1,6 @@
 package com.devskill.devskill_api.utils;
 
-import com.devskill.devskill_api.models.Contributor;
-import com.devskill.devskill_api.models.RepositoryEntity;
-import com.devskill.devskill_api.models.TrendingRepository;
+import com.devskill.devskill_api.models.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
@@ -233,7 +231,10 @@ public class Utils {
                 response.put("repositories", pageObject.getContent());
             } else if (firstItem instanceof Contributor) {
                 response.put("contributors", pageObject.getContent());
-            } else {
+            } else if (firstItem instanceof Extension || firstItem instanceof ExtensionDTO){
+                response.put("extensions", pageObject.getContent());
+            }
+            else {
                 response.put("items", pageObject.getContent());
             }
         } else {
