@@ -8,7 +8,7 @@ import java.time.LocalDate;
 public class Extension {
 
     @Id
-    @Column(name = "extension_name", nullable = false, length = 50)
+    @Column(name = "extension_name", nullable = false, length = 250)
     private String extensionName;
 
     @Column(name = "repo_count", nullable = false)
