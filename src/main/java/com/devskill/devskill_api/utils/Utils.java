@@ -37,8 +37,14 @@ public class Utils {
 
     public Path getPathOfRepositories(String name){
 
+        System.out.println("1");
+
         // Path to the repositories folder
         Path outputDir = Path.of(General.OUTPUT_FOLDER.getText());
+
+        System.out.println(outputDir);
+
+        System.out.println(!Files.exists(outputDir) || !Files.isDirectory(outputDir));
 
         // Check if the 'output' directory exists
         if (!Files.exists(outputDir) || !Files.isDirectory(outputDir)) {

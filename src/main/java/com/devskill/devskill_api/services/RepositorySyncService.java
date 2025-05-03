@@ -118,7 +118,7 @@ public class RepositorySyncService {
         ObjectMapper objectMapper = new ObjectMapper();
 
 
-        Path jsonFilePath = utils.getPathOfRepositories("t.json");
+        Path jsonFilePath = utils.getPathOfRepositories("output-1-2015.json");
 
 
         JsonNode rootNode = objectMapper.readTree(jsonFilePath.toFile());

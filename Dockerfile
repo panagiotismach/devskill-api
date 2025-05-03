@@ -16,6 +16,10 @@ RUN mvn dependency:go-offline -B
 # Copy the source code into the container
 COPY . .
 
+# Copy the output directory into the container
+COPY output /app/output
+
+
 # Package the application
 RUN mvn clean package -DskipTests
 
@@ -33,6 +37,7 @@ WORKDIR /app
 
 # Copy the packaged JAR file from the builder stage
 COPY --from=builder /app/target/devskill-api-0.0.1-SNAPSHOT.jar /app/devskill-api.jar
+COPY --from=builder /app/output /app/output
 
 # Expose the port the app will run on (default Spring Boot port is 8080)
 EXPOSE 8080
