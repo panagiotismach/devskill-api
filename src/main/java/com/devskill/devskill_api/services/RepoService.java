@@ -405,6 +405,10 @@ public class RepoService {
         return contributorRepositoryRepository.findTopRepositories(PageRequest.of(0, pageSize));
     }
 
+    public RepositoryEntity findFirstByOrderByCreation_dateDesc(){
+        return repositoryRepository.findFirstByOrderByCreationDateDesc();
+    }
+
 
 
 }

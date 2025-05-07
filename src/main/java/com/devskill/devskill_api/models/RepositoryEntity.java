@@ -74,7 +74,7 @@ public class RepositoryEntity {
         this.repoUrl = repoUrl;
     }
 
-    public LocalDate getCreation_date() {
+    public LocalDate getCreationDate() {
         return creation_date;
     }
 

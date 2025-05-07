@@ -23,4 +23,7 @@ public interface RepositoryRepository extends JpaRepository<RepositoryEntity, Lo
             nativeQuery = true)
     List<Object[]> findTopExtensionsWithRepositoryCount();
 
+
+    @Query(value = "SELECT * FROM repositories r ORDER BY r.creation_date DESC LIMIT 1", nativeQuery = true)
+    RepositoryEntity findFirstByOrderByCreationDateDesc();
 }

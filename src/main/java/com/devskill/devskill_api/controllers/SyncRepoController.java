@@ -1,5 +1,6 @@
 package com.devskill.devskill_api.controllers;
 
+import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.services.ExtensionAggregationService;
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.services.RepositorySyncService;
@@ -10,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +58,23 @@ public class SyncRepoController {
         repositorySyncService.executeSync(files,megabyte, trendingRepositories, true);
 
         return "The process of syncing the trending repositories data has been started.";
+    }
+
+    @GetMapping("/retrieveRepoProgress")
+    public ResponseEntity<Map<String, Object>> retrieveRepoProgress() throws Exception {
+
+        List<String> repositoriesList =  repositorySyncService.readRepositoryNamesFromJson();
+        RepositoryEntity lastRepository = repoService.findFirstByOrderByCreation_dateDesc();
+        
+        int index = repositoriesList.indexOf(lastRepository.getRepoName());
+
+        Map<String, Object> response =  new HashMap<>();
+        response.put("repositoryIndex", index);
+        response.put("repositoriesListSize", repositoriesList.size());
+        response.put("RemainingRepositories", repositoriesList.size() - index);
+        response.put("lastRepository", lastRepository);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/aggregate-extensions")
