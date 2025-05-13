@@ -2,10 +2,7 @@ package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
-import com.devskill.devskill_api.repository.ContributionRepository;
-import com.devskill.devskill_api.repository.ContributorRepositoryRepository;
-import com.devskill.devskill_api.repository.RepositoryRepository;
-import com.devskill.devskill_api.repository.TrendingRepositoryRepository;
+import com.devskill.devskill_api.repository.*;
 import com.devskill.devskill_api.utils.General;
 import com.devskill.devskill_api.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -46,6 +42,9 @@ public class RepoService {
 
     @Autowired
     private ContributorRepositoryRepository contributorRepositoryRepository;
+
+    @Autowired
+    private ExtensionService extensionService;
 
     @Autowired
     private Utils utils;
@@ -218,8 +217,8 @@ public class RepoService {
           RepositoryEntity  repo = existingRepo.get();
           LocalDate preLastCommitDate = repo.getLast_commit_date();
           repo.setLast_commit_date(lastCommitDate);
-          List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
-          repo.setExtensions(extensions);
+          Map<String, Integer> extensions = findUniqueExtensions(repositoryPath);
+          repo.setExtensions(extensions.keySet().stream().toList());
           repositoryRepository.save(repo);
             if(isTrending){
                 TrendingRepository trendingRepository = new TrendingRepository(repo);
@@ -233,10 +232,10 @@ public class RepoService {
 
         LocalDate creationDate = retrieveCreationDate(repositoryPath);
 
-        List<String> extensions = findUniqueExtensions(repositoryPath).keySet().stream().toList();
+        Map<String, Integer> extensions = findUniqueExtensions(repositoryPath);
 
         // Create and save a new RepositoryEntity with the relevant details
-        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions);
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions.keySet().stream().toList());
 
         RepositoryEntity persistedRepository = repositoryRepository.save(repositoryEntity);
 
@@ -244,6 +243,8 @@ public class RepoService {
             TrendingRepository trendingRepository = new TrendingRepository(repositoryEntity);
             trendingRepositoryRepository.save(trendingRepository);
         }
+
+        extensionService.updateExtensionTable(isExisted, extensions, lastCommitDate);
 
         results.put("repository", persistedRepository);
         results.put("isExisted", isExisted);

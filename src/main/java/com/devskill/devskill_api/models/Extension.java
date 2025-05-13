@@ -1,15 +1,21 @@
 package com.devskill.devskill_api.models;
 
+import com.devskill.devskill_api.utils.StringListConverter;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "extension")
 public class Extension {
 
     @Id
-    @Column(name = "extension_name", nullable = false, length = 250)
+    @Column(name = "extension_name", nullable = false, length = 250, unique = true)
     private String extensionName;
+
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "language", nullable = false, length = 1000)
+    private List<String> language;
 
     @Column(name = "repo_count", nullable = false)
     private int repoCount;
@@ -25,8 +31,9 @@ public class Extension {
     }
 
     // Constructor for creating instances
-    public Extension(String extensionName, int repoCount, int fileCount, LocalDate lastUsed) {
+    public Extension(String extensionName, List<String> language, int repoCount, int fileCount, LocalDate lastUsed) {
         this.extensionName = extensionName;
+        this.language = language;
         this.repoCount = repoCount;
         this.fileCount = fileCount;
         this.lastUsed = lastUsed;
@@ -63,6 +70,14 @@ public class Extension {
 
     public void setLastUsed(LocalDate lastUsed) {
         this.lastUsed = lastUsed;
+    }
+
+    public List<String> getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(List<String> language) {
+        this.language = language;
     }
 
     // Optional: Override equals and hashCode for entity consistency

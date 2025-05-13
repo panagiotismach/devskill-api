@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -313,8 +314,25 @@ public class UiController {
     @GetMapping("/retrieveExtensions")
     public ResponseEntity<?> getExtensions(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "repoCount") String type,
+            @RequestParam(defaultValue = "desc") String function) {
+        
+        if(!type.equals("repoCount") && !type.equals("lastUsed")){
+            type = "repoCount";
+        }
+
+        // Create Pageable with default sorting if function is invalid
+        Pageable pageable;
+        if (function.equals("asc")) {
+            pageable = PageRequest.of(page, size, Sort.by(type).ascending());
+        } else if (function.equals("desc")) {
+            pageable = PageRequest.of(page, size, Sort.by(type).descending());
+        } else {
+            // Default to descending order for invalid function values (e.g., "alter")
+            pageable = PageRequest.of(page, size, Sort.by(type).descending());
+        }
+        
         return ResponseEntity.ok(extensionService.getExtensions(pageable));
     }
 
