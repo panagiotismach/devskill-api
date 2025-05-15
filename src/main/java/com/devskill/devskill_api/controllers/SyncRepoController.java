@@ -43,7 +43,7 @@ public class SyncRepoController {
     }
 
     @GetMapping("/syncRepositories")
-    public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "300") long megabyte) throws Exception {
+    public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "150") long megabyte) throws Exception {
 
         List<String> repositories = repositorySyncService.readRepositoryNamesFromJson();
         repositorySyncService.executeSync(files,megabyte, repositories, false);

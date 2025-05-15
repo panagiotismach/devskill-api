@@ -3,7 +3,9 @@ package com.devskill.devskill_api.utils;
 public enum General {
 
      FILES(1000),
-     MB(300),
+     MB(150),
+
+     Languages("languages.yml"),
      GITHUB("https://github.com/"),
      GITHUB_TRENDING("https://github.com/trending"),
      FILES_FOLDER("files"),
