@@ -318,7 +318,7 @@ public class UiController {
             @RequestParam(defaultValue = "repoCount") String type,
             @RequestParam(defaultValue = "desc") String function) {
         
-        if(!type.equals("repoCount") && !type.equals("lastUsed")){
+        if(!type.equals("repoCount") && !type.equals("lastUsed") && !type.equals("fileCount")){
             type = "repoCount";
         }
 

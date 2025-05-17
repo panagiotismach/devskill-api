@@ -3,7 +3,6 @@ package com.devskill.devskill_api.utils;
 import com.devskill.devskill_api.models.*;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -247,5 +246,32 @@ public class Utils {
         response.put("pageSize", pageObject.getSize());
 
         return response;
+    }
+
+    public boolean checkPeriodSync(String from, String to){
+
+        boolean isValid;
+
+        if(from.matches("^(16|20|23)$") && to.matches("^(19|22|25)$")){
+            isValid = true;
+        }else{
+            isValid = false;
+        }
+
+
+        if (isValid) {
+            try {
+                int fromNum = Integer.parseInt(from);
+                int toNum = Integer.parseInt(to);
+                if (fromNum >= toNum) {
+                    isValid = false;
+                }
+            } catch (NumberFormatException e) {
+                isValid = false;
+            }
+        }
+
+        return !isValid;
+
     }
 }

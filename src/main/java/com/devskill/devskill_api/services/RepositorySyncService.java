@@ -113,12 +113,12 @@ public class RepositorySyncService {
         }
 
     }
-    public List<String> readRepositoryNamesFromJson() throws IOException {
+    public List<String> readRepositoryNamesFromJson(String from, String to) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
 
-        Path jsonFilePath = utils.getPathOfRepositories("output-1-2015.json");
+        Path jsonFilePath = utils.getPathOfRepositories(STR."unique_repos_20\{from}_20\{to}.json");
 
 
         JsonNode rootNode = objectMapper.readTree(jsonFilePath.toFile());

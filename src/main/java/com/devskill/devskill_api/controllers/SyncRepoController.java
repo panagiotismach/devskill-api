@@ -5,6 +5,7 @@ import com.devskill.devskill_api.services.ExtensionAggregationService;
 import com.devskill.devskill_api.services.RepoService;
 import com.devskill.devskill_api.services.RepositorySyncService;
 import com.devskill.devskill_api.utils.General;
+import com.devskill.devskill_api.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,9 @@ public class SyncRepoController {
     @Autowired
     private ExtensionAggregationService aggregationService;
 
+    @Autowired
+    private Utils utils;
+
     @GetMapping("/syncRepo")
     public ResponseEntity<?> syncRepo(@RequestParam String repoName) {
         try {
@@ -43,9 +47,14 @@ public class SyncRepoController {
     }
 
     @GetMapping("/syncRepositories")
-    public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "300") long megabyte) throws Exception {
+    public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "150") long megabyte, @RequestParam(defaultValue = "16") String from , @RequestParam(defaultValue = "19") String to) throws Exception {
 
-        List<String> repositories = repositorySyncService.readRepositoryNamesFromJson();
+        if (utils.checkPeriodSync(to, from)) {
+            from = "16";
+            to = "19";
+        }
+
+        List<String> repositories = repositorySyncService.readRepositoryNamesFromJson(from, to);
         repositorySyncService.executeSync(files,megabyte, repositories, false);
 
         return "The process of syncing the repositories data has been started.";
@@ -61,9 +70,14 @@ public class SyncRepoController {
     }
 
     @GetMapping("/retrieveRepoProgress")
-    public ResponseEntity<Map<String, Object>> retrieveRepoProgress() throws Exception {
+    public ResponseEntity<Map<String, Object>> retrieveRepoProgress( @RequestParam(defaultValue = "16") String from , @RequestParam(defaultValue = "19") String to) throws Exception {
 
-        List<String> repositoriesList =  repositorySyncService.readRepositoryNamesFromJson();
+        if (utils.checkPeriodSync(to, from)) {
+            from = "16";
+            to = "19";
+        }
+
+        List<String> repositoriesList =  repositorySyncService.readRepositoryNamesFromJson(from, to);
         RepositoryEntity lastRepository = repoService.findFirstByOrderByCreation_dateDesc();
         
         int index = repositoriesList.indexOf(lastRepository.getRepoName());
