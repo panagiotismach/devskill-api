@@ -61,10 +61,11 @@ public class ExtensionService {
         return utils.constructPageResponse(extensions);
     }
 
-    public void updateExtensionTable(boolean repoExist, Map<String, Integer> extensionCounts, LocalDate lastCommitDate) {
-        for (Map.Entry<String, Integer> entry : extensionCounts.entrySet()) {
-            String extensionName = entry.getKey();
-            int fileCount = entry.getValue();
+    public void updateExtensionTable(boolean repoExist, List<ExtensionDTO> extensions) {
+        for (ExtensionDTO extensionDTO : extensions) {
+            String extensionName = extensionDTO.getName();
+            int fileCount = extensionDTO.getFileCount();
+            LocalDate lastCommitDate = extensionDTO.getLastUsed();
 
             // Find or create extension entity
             Optional<Extension> optionalExtension = extensionRepository.findById(extensionName);

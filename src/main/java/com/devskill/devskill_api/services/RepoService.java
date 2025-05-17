@@ -1,5 +1,6 @@
 package com.devskill.devskill_api.services;
 
+import com.devskill.devskill_api.models.ExtensionDTO;
 import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.models.TrendingRepository;
 import com.devskill.devskill_api.repository.*;
@@ -19,7 +20,9 @@ import org.jsoup.nodes.Element;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -154,10 +157,11 @@ public class RepoService {
     }
 
 
-    private Map<String, Integer> findUniqueExtensions(Path repositoryPath) {
+    private List<ExtensionDTO> findUniqueExtensions(Path repositoryPath) {
         File projectDirectory = new File(String.valueOf(repositoryPath));
         Stack<File> stack = new Stack<>();
         Map<String, Integer> fileExtensionCount = new HashMap<>();
+        Map<String, Long> latestModifiedTime = new HashMap<>();
 
         if (projectDirectory.exists() && projectDirectory.isDirectory()) {
             stack.push(projectDirectory);
@@ -176,6 +180,8 @@ public class RepoService {
                             if (lastDotIndex != -1) {
                                 String fileExtension = fileName.substring(lastDotIndex + 1).toLowerCase();
                                 fileExtensionCount.put(fileExtension, fileExtensionCount.getOrDefault(fileExtension, 0) + 1);
+                                long lastModified = file.lastModified();
+                                latestModifiedTime.merge(fileExtension, lastModified, Math::max);
                             }
                         }
                     }
@@ -183,15 +189,29 @@ public class RepoService {
             }
         }
 
-        return fileExtensionCount.entrySet()
-                .stream()
-                .sorted((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (existingValue, newValue) -> existingValue,
-                        LinkedHashMap::new
-                ));
+        List<ExtensionDTO> result = new ArrayList<>();
+        for (String ext : fileExtensionCount.keySet()) {
+            int fileCount = fileExtensionCount.get(ext);
+            long lastModifiedMillis = latestModifiedTime.getOrDefault(ext, 0L);
+            LocalDate lastUsedDate = Instant.ofEpochMilli(lastModifiedMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
+            // Placeholder for language list. You can map it using a predefined map.
+            List<String> language = Collections.emptyList();
+
+            ExtensionDTO dto = new ExtensionDTO(
+                    ext,
+                    language,
+                    fileCount,
+                    1, // repoCount = 1 since this method works per repository
+                    lastUsedDate
+            );
+            result.add(dto);
+        }
+
+        result.sort(Comparator.comparingInt(ExtensionDTO::getFileCount).reversed());
+        return result;
     }
 
     public Map<String, Object> getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
@@ -217,8 +237,8 @@ public class RepoService {
           RepositoryEntity  repo = existingRepo.get();
           LocalDate preLastCommitDate = repo.getLast_commit_date();
           repo.setLast_commit_date(lastCommitDate);
-          Map<String, Integer> extensions = findUniqueExtensions(repositoryPath);
-          repo.setExtensions(extensions.keySet().stream().toList());
+          List<ExtensionDTO> extensions = findUniqueExtensions(repositoryPath);
+          repo.setExtensions(extensions.stream().map(ExtensionDTO::getName).toList());
           repositoryRepository.save(repo);
             if(isTrending){
                 TrendingRepository trendingRepository = new TrendingRepository(repo);
@@ -232,10 +252,10 @@ public class RepoService {
 
         LocalDate creationDate = retrieveCreationDate(repositoryPath);
 
-        Map<String, Integer> extensions = findUniqueExtensions(repositoryPath);
+        List<ExtensionDTO> extensions = findUniqueExtensions(repositoryPath);
 
         // Create and save a new RepositoryEntity with the relevant details
-        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions.keySet().stream().toList());
+        RepositoryEntity repositoryEntity = new RepositoryEntity(extractedRepoName, repoUrl,creationDate,lastCommitDate, extensions.stream().map(ExtensionDTO::getName).toList());
 
         RepositoryEntity persistedRepository = repositoryRepository.save(repositoryEntity);
 
@@ -244,7 +264,7 @@ public class RepoService {
             trendingRepositoryRepository.save(trendingRepository);
         }
 
-        extensionService.updateExtensionTable(isExisted, extensions, lastCommitDate);
+        extensionService.updateExtensionTable(isExisted, extensions);
 
         results.put("repository", persistedRepository);
         results.put("isExisted", isExisted);
