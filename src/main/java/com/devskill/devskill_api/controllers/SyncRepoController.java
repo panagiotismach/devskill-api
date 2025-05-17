@@ -47,11 +47,7 @@ public class SyncRepoController {
     }
 
     @GetMapping("/syncRepositories")
-<<<<<<< HEAD
     public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "150") long megabyte, @RequestParam(defaultValue = "16") String from , @RequestParam(defaultValue = "19") String to) throws Exception {
-=======
-    public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "150") long megabyte) throws Exception {
->>>>>>> c90fb3847a04497eb7707fb61f9cc13952c70a3f
 
         if (utils.checkPeriodSync(to, from)) {
             from = "16";
