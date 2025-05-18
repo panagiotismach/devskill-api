@@ -107,7 +107,6 @@ public class ExtensionService {
                 Map<String, Object> properties = entry.getValue();
 
                 Object extensionsObj = properties.get("extensions");
-                System.out.println(extensionsObj);
                 if (extensionsObj instanceof List) {
                     List<String> extensions = (List<String>) extensionsObj;
                     for (String ext : extensions) {

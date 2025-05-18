@@ -252,7 +252,9 @@ public class Utils {
 
         boolean isValid;
 
+
         if(from.matches("^(16|20|23)$") && to.matches("^(19|22|25)$")){
+            System.out.println("o");
             isValid = true;
         }else{
             isValid = false;
@@ -264,14 +266,16 @@ public class Utils {
                 int fromNum = Integer.parseInt(from);
                 int toNum = Integer.parseInt(to);
                 if (fromNum >= toNum) {
+                    System.out.println("e");
                     isValid = false;
                 }
             } catch (NumberFormatException e) {
+                System.out.println("u");
                 isValid = false;
             }
         }
 
-        return !isValid;
+        return isValid;
 
     }
 }

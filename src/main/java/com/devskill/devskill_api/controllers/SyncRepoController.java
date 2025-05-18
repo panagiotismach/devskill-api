@@ -50,7 +50,7 @@ public class SyncRepoController {
     @GetMapping("/syncRepositories")
     public String syncRepositories(@RequestParam(defaultValue = "1000") int files , @RequestParam(defaultValue = "150") long megabyte, @RequestParam(defaultValue = "16") String from , @RequestParam(defaultValue = "19") String to) throws Exception {
 
-        if (utils.checkPeriodSync(to, from)) {
+        if (!utils.checkPeriodSync(from, to)) {
             from = "16";
             to = "19";
         }
@@ -73,7 +73,7 @@ public class SyncRepoController {
     @GetMapping("/retrieveRepoProgress")
     public ResponseEntity<Map<String, Object>> retrieveRepoProgress( @RequestParam(defaultValue = "16") String from , @RequestParam(defaultValue = "19") String to) throws Exception {
 
-        if (utils.checkPeriodSync(to, from)) {
+        if (!utils.checkPeriodSync(from, to)) {
             from = "16";
             to = "19";
         }
