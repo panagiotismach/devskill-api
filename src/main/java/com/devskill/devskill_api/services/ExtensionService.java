@@ -2,9 +2,7 @@ package com.devskill.devskill_api.services;
 
 import com.devskill.devskill_api.models.Extension;
 import com.devskill.devskill_api.models.ExtensionDTO;
-import com.devskill.devskill_api.models.RepositoryEntity;
 import com.devskill.devskill_api.repository.ExtensionRepository;
-import com.devskill.devskill_api.utils.General;
 import com.devskill.devskill_api.utils.Utils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
@@ -132,6 +129,11 @@ public class ExtensionService {
         } catch (Exception e) {
             System.out.println(e);
         }
+    }
+
+   public String getExtension(String extension){
+       List<String> languages = extensionToLanguages.get(extension);
+       return languages != null ? extension : "other";
     }
 
 }

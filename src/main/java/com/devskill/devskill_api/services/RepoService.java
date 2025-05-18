@@ -161,7 +161,6 @@ public class RepoService {
         File projectDirectory = new File(String.valueOf(repositoryPath));
         Stack<File> stack = new Stack<>();
         Map<String, Integer> fileExtensionCount = new HashMap<>();
-        Map<String, Long> latestModifiedTime = new HashMap<>();
 
         if (projectDirectory.exists() && projectDirectory.isDirectory()) {
             stack.push(projectDirectory);
@@ -170,18 +169,19 @@ public class RepoService {
                 File currentFile = stack.pop();
                 File[] filesInDirectory = currentFile.listFiles();
 
-                if (filesInDirectory != null) {
+                if (filesInDirectory != null && !currentFile.isHidden()) {
                     for (File file : filesInDirectory) {
                         if (file.isDirectory()) {
                             stack.push(file);
                         } else {
                             String fileName = file.getName();
+                            if(fileName.equals("pack")){
+                                System.out.println(fileName);
+                            }
                             int lastDotIndex = fileName.lastIndexOf('.');
                             if (lastDotIndex != -1) {
                                 String fileExtension = fileName.substring(lastDotIndex + 1).toLowerCase();
                                 fileExtensionCount.put(fileExtension, fileExtensionCount.getOrDefault(fileExtension, 0) + 1);
-                                long lastModified = file.lastModified();
-                                latestModifiedTime.merge(fileExtension, lastModified, Math::max);
                             }
                         }
                     }
@@ -192,7 +192,7 @@ public class RepoService {
         List<ExtensionDTO> result = new ArrayList<>();
         for (String ext : fileExtensionCount.keySet()) {
             int fileCount = fileExtensionCount.get(ext);
-            long lastModifiedMillis = latestModifiedTime.getOrDefault(ext, 0L);
+            long lastModifiedMillis = getLastGitCommitTimestampForExtension(repositoryPath,ext);
             LocalDate lastUsedDate = Instant.ofEpochMilli(lastModifiedMillis)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate();
@@ -212,6 +212,28 @@ public class RepoService {
 
         result.sort(Comparator.comparingInt(ExtensionDTO::getFileCount).reversed());
         return result;
+    }
+
+    private long getLastGitCommitTimestampForExtension(Path repoPath, String extension) {
+        try {
+            ProcessBuilder builder = new ProcessBuilder(
+                    "git", "log", "-1", "--pretty=format:%ct", "--", "*." + extension
+            );
+            builder.directory(repoPath.toFile());
+            builder.redirectErrorStream(true);
+
+            Process process = builder.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String output = reader.readLine();
+                if (output != null && !output.isEmpty()) {
+                    long epochSeconds = Long.parseLong(output.trim());
+                    return epochSeconds * 1000; // convert to milliseconds
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            // Log if needed
+        }
+        return 0L; // Fallback if git fails
     }
 
     public Map<String, Object> getRepoDetails(Path repositoryPath, boolean isTrending) throws Exception {
@@ -263,6 +285,7 @@ public class RepoService {
             TrendingRepository trendingRepository = new TrendingRepository(repositoryEntity);
             trendingRepositoryRepository.save(trendingRepository);
         }
+        
 
         extensionService.updateExtensionTable(isExisted, extensions);
 

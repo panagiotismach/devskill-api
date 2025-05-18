@@ -38,8 +38,9 @@ public class SyncRepoController {
             List<String> trendingRepositories =  repoService.getTrendingRepositories();
            boolean isTrending = trendingRepositories.stream().anyMatch(trendingRepo -> trendingRepo.equalsIgnoreCase(repoName));
 
-            Map<String, Object> syncData =  repositorySyncService.syncRepositoryData(repoName, General.FILES.getValue(), General.MB.getValue(), isTrending);
-            return ResponseEntity.ok(syncData); // Return 200 OK with the syncData
+            repositorySyncService.executeSync(General.FILES.getValue(),General.MB.getValue(), List.of(repoName) , isTrending);
+
+            return ResponseEntity.ok("\"The process of syncing the repository data has been started.\""); // Return 200 OK with the syncData
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(STR."Internal Server Error: \{e.getMessage()}"); // Return 500 Internal Server Error
