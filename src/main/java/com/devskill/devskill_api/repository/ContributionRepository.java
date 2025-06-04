@@ -42,5 +42,9 @@ public interface ContributionRepository extends JpaRepository<Contribution, Long
     @Query("SELECT c.extension, SUM(c.insertions), SUM(c.deletions) FROM Contribution c WHERE c.contributor.id = :contributorId GROUP BY c.extension")
     List<Object[]> findContributionsByContributor(@Param("contributorId") Long contributorId);
 
+    @Query("SELECT c.contributor.githubUsername, c.extension, SUM(c.insertions), SUM(c.deletions) " +
+            "FROM Contribution c GROUP BY c.contributor.githubUsername, c.extension")
+    List<Object[]> findAllContributions();
+
 }
 

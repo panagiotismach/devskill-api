@@ -13,6 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins("*")  // Allow your frontend origin
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Allowed HTTP methods
                 .allowedHeaders("*")  // Allow all headers
-                .allowCredentials(true);  // Allow credentials if necessary (e.g., cookies)
+                .allowCredentials(false);
     }
 }
