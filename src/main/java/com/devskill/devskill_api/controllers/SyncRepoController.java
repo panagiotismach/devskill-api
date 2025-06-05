@@ -174,9 +174,9 @@ public class SyncRepoController {
                 boolean hasOther = false;
 
                 for (String ext : extensions) {
-                    String mappedLanguages = extensionService.getExtension(ext.toLowerCase());
+                    List<String> mappedLanguages = extensionService.getLanguages(ext.toLowerCase());
                     if (mappedLanguages != null && !mappedLanguages.isEmpty() && !mappedLanguages.contains("other")) {
-                        languages.add(mappedLanguages);
+                        languages.add(mappedLanguages.size() == 1 ? mappedLanguages.getFirst() : ext);
                     } else {
                         hasOther = true;
                     }
@@ -288,20 +288,21 @@ public class SyncRepoController {
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try (CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-                csvWriter.writeNext(new String[]{"committer", "language", "total", "insert", "delete"});
+                csvWriter.writeNext(new String[]{"committer", "extension", "languages", "total", "insert", "delete"});
                 contributions
                         .forEach(record -> {
                             String committer = record[0] != null ? record[0].toString() : "";
                             String extension = record[1] != null ? record[1].toString() : "";
-                            String language = extensionService.getExtension(extension.toLowerCase());
-                            String languageStr = (language != null && !language.isEmpty() && !language.contains("other"))
-                                    ? language
+                            List<String> languages = extensionService.getLanguages(extension.toLowerCase());
+                            String languageStr = (languages != null && !languages.isEmpty() && !languages.contains("other"))
+                                    ? String.join(";", languages)
                                     : "other";
                             Long insertions = record[2] != null ? ((Number) record[2]).longValue() : 0L;
                             Long deletions = record[3] != null ? ((Number) record[3]).longValue() : 0L;
                             Long total = insertions + deletions;
                             csvWriter.writeNext(new String[]{
                                     committer,
+                                    extension,
                                     languageStr,
                                     String.valueOf(total),
                                     String.valueOf(insertions),
