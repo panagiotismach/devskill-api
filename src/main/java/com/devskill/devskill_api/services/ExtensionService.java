@@ -135,9 +135,4 @@ public class ExtensionService {
        return languages != null ? extension : "other";
     }
 
-    public List<String> getLanguages(String extension){
-        List<String> languages = extensionToLanguages.get(extension);
-        return languages != null ? languages : List.of("other");
-    }
-
 }
