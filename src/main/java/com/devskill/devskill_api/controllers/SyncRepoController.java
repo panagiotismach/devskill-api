@@ -6,10 +6,7 @@ import com.devskill.devskill_api.repository.ContributionRepository;
 import com.devskill.devskill_api.repository.ContributorRepository;
 import com.devskill.devskill_api.repository.ExtensionRepository;
 import com.devskill.devskill_api.repository.RepositoryRepository;
-import com.devskill.devskill_api.services.ContributorsService;
-import com.devskill.devskill_api.services.ExtensionAggregationService;
-import com.devskill.devskill_api.services.RepoService;
-import com.devskill.devskill_api.services.RepositorySyncService;
+import com.devskill.devskill_api.services.*;
 import com.devskill.devskill_api.utils.General;
 import com.devskill.devskill_api.utils.Utils;
 import com.opencsv.CSVWriter;
@@ -27,9 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,6 +38,9 @@ public class SyncRepoController {
 
     @Autowired
     private ExtensionRepository extensionRepository;
+
+    @Autowired
+    private ExtensionService extensionService;
 
     @Autowired
     private ContributorsService contributorsService;
@@ -159,6 +157,60 @@ public class SyncRepoController {
                 .body(resource);
     }
 
+    @GetMapping("/csv/repositories-languages")
+    public ResponseEntity<Resource> exportRepositoriesLanguagesCsv() throws Exception {
+        List<RepositoryEntity> repositories = repositoryRepository.findAll();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (CSVWriter writer = new CSVWriter(new OutputStreamWriter(baos, StandardCharsets.UTF_8))) {
+            // Write header
+            writer.writeNext(new String[]{"repository_name", "creation_date", "last_commit_date", "language_number", "languages", "committers_number", "committers"});
+
+            // Write data
+            for (RepositoryEntity repo : repositories) {
+                // Convert extensions to languages
+                List<String> extensions = repo.getExtensions() != null ? repo.getExtensions() : List.of();
+                Set<String> languages = new HashSet<>();
+                boolean hasOther = false;
+
+                for (String ext : extensions) {
+                    String mappedLanguages = extensionService.getExtension(ext.toLowerCase());
+                    if (mappedLanguages != null && !mappedLanguages.isEmpty() && !mappedLanguages.contains("other")) {
+                        languages.add(mappedLanguages);
+                    } else {
+                        hasOther = true;
+                    }
+                }
+
+                // Add "other" only once if any extensions mapped to it
+                if (hasOther) {
+                    languages.add("other");
+                }
+
+                String languagesStr = languages.isEmpty() ? "" : String.join(";", languages);
+                String committers = repo.getContributorRepositories().stream()
+                        .map(cr -> cr.getContributor().getGithubUsername())
+                        .collect(Collectors.joining(";"));
+
+                writer.writeNext(new String[]{
+                        repo.getRepoName(),
+                        repo.getCreationDate() != null ? repo.getCreationDate().toString() : "",
+                        repo.getLast_commit_date() != null ? repo.getLast_commit_date().toString() : "",
+                        String.valueOf(languages.size()),
+                        languagesStr,
+                        String.valueOf(repo.getContributorRepositories().size()),
+                        committers
+                });
+            }
+        }
+
+        ByteArrayResource resource = new ByteArrayResource(baos.toByteArray());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=repositories-languages.csv")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(resource);
+    }
+
     @GetMapping("/csv/extensions")
     public ResponseEntity<Resource> exportExtensionsCsv() throws Exception {
         List<Extension> extensions = extensionRepository.findAll();
@@ -223,6 +275,47 @@ public class SyncRepoController {
                     .contentLength(out.size())
                     .body(resource);
 
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body("Internal Server Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/csv/committer-contributions-languages")
+    public ResponseEntity<?> getCommitterContributionsLanguagesCsv() {
+        try {
+            List<Object[]> contributions = contributionRepository.findAllContributions();
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            try (CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+                csvWriter.writeNext(new String[]{"committer", "language", "total", "insert", "delete"});
+                contributions
+                        .forEach(record -> {
+                            String committer = record[0] != null ? record[0].toString() : "";
+                            String extension = record[1] != null ? record[1].toString() : "";
+                            String language = extensionService.getExtension(extension.toLowerCase());
+                            String languageStr = (language != null && !language.isEmpty() && !language.contains("other"))
+                                    ? language
+                                    : "other";
+                            Long insertions = record[2] != null ? ((Number) record[2]).longValue() : 0L;
+                            Long deletions = record[3] != null ? ((Number) record[3]).longValue() : 0L;
+                            Long total = insertions + deletions;
+                            csvWriter.writeNext(new String[]{
+                                    committer,
+                                    languageStr,
+                                    String.valueOf(total),
+                                    String.valueOf(insertions),
+                                    String.valueOf(deletions)
+                            });
+                        });
+            }
+
+            ByteArrayResource resource = new ByteArrayResource(out.toByteArray());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=committer-contributions-languages.csv")
+                    .contentType(MediaType.parseMediaType("text/csv"))
+                    .contentLength(out.size())
+                    .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body("Internal Server Error: " + e.getMessage());
