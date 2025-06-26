@@ -32,11 +32,15 @@ public interface ContributionRepository extends JpaRepository<Contribution, Long
             "ORDER BY SUM(c.insertions) DESC, SUM(c.deletions) DESC")
     Page<RepositoryEntity> findRepositoriesWithInsertionsAndDeletionsByLanguage(@Param("extension") String extension, Pageable pageable);
 
-    @Query("SELECT c.contributor.email, SUM(c.insertions + c.deletions) AS totalContributions " +
-            "FROM Contribution c " +
-            "GROUP BY c.contributor " +
-            "ORDER BY totalContributions DESC " +
-            "LIMIT 5")
+    @Query(value = "SELECT email, SUM(total_contribs) " +
+            "FROM ( " +
+            "    SELECT c2_0.email, (CAST(c1_0.insertions AS BIGINT) + CAST(c1_0.deletions AS BIGINT)) AS total_contribs " +
+            "    FROM contributions c1_0 " +
+            "    JOIN contributors c2_0 ON c2_0.id = c1_0.contributor_id " +
+            ") AS subquery " +
+            "GROUP BY email " +
+            "ORDER BY 2 DESC " +
+            "FETCH FIRST 5 ROWS ONLY", nativeQuery = true)
     List<Object[]> findTopContributors();
 
     @Query("SELECT c.extension, SUM(c.insertions), SUM(c.deletions) FROM Contribution c WHERE c.contributor.id = :contributorId GROUP BY c.extension")
