@@ -453,6 +453,66 @@ public class RepoService {
         return repositoryRepository.findFirstByOrderByCreationDateDesc();
     }
 
+    public Map<String, Long> countReposPerOrganization() {
+        List<Object[]> raw = repositoryRepository.countReposPerOrganization();
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Object[] row : raw) {
+            String org = (String) row[0];
+            Long count = (Long) row[1];
+            result.put(org, count);
+        }
+        return result;
+    }
+
+    public Map<String, Map<String, Long>> getExtensionsPerOrganization() {
+        List<Object[]> rows = repositoryRepository.getExtensionsPerOrganization();
+        Map<String, Map<String, Long>> result = new LinkedHashMap<>();
+
+        rows.forEach(row ->
+                result.computeIfAbsent((String) row[0], k -> new LinkedHashMap<>())
+                        .put((String) row[1], (Long) row[2])
+        );
+
+        return result;
+    }
+
+    public Map<String, Map<String, Long>> getMonthlyExtensionTrends() {
+
+        List<Object[]> rows = repositoryRepository.findMonthlyExtensionTrends();
+        Map<String, Map<String, Long>> result = new LinkedHashMap<>();
+
+        for (Object[] row : rows) {
+            String ext = (String) row[0];
+            String month = (String) row[1];
+            Long count = ((Number) row[2]).longValue();
+
+            result
+                    .computeIfAbsent(ext, k -> new LinkedHashMap<>())
+                    .put(month, count);
+        }
+
+        return result;
+    }
+
+    public Map<String, Map<String, Long>> getExtensionCoOccurrence(int minCount, int limit) {
+        List<Object[]> rows = repositoryRepository.findExtensionCoOccurrence(minCount, limit);
+        Map<String, Map<String, Long>> coOccurrence = new LinkedHashMap<>();
+
+        for (Object[] row : rows) {
+            String extA = (String) row[0];
+            String extB = (String) row[1];
+            Long count = ((Number) row[2]).longValue();
+
+            coOccurrence.computeIfAbsent(extA, k -> new LinkedHashMap<>()).put(extB, count);
+            coOccurrence.computeIfAbsent(extB, k -> new LinkedHashMap<>()).put(extA, count);
+        }
+
+        return coOccurrence;
+    }
+
+
+
+
 
 
 }

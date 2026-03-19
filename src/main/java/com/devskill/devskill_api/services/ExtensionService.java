@@ -33,6 +33,26 @@ public class ExtensionService {
 
 
     public Map<String, Object> getExtensions(Pageable pageable) {
+
+        if(pageable == null){
+            List<ExtensionDTO> extensionList = extensionRepository.findAll()
+                    .stream()
+                    .sorted(Comparator.comparingInt(Extension::getRepoCount).reversed())
+                    .map(s -> new ExtensionDTO(
+                            s.getExtensionName(),
+                            s.getLanguage(),
+                            s.getFileCount(),
+                            s.getRepoCount(),
+                            s.getLastUsed()
+                    ))
+                    .toList();
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("extensions", extensionList);
+
+            return response;
+        }
+
         Page<ExtensionDTO> extensions = extensionRepository.findAll(pageable)
                 .map(s -> new ExtensionDTO(
                         s.getExtensionName(),
